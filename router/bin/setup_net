@@ -1,0 +1,127 @@
+#!/bin/sh
+
+# Setup network interfaces
+
+# Сделать параметер test
+################
+
+function fatal {
+  echo -e "\nError! $*!";
+  exit 123;
+}
+
+PATH=/usr/sbin:/sbin/:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
+
+# Path to the configuration files
+
+CFG_PATH="/usr/local/openbill/router/etc/network/" ###CHOOSE ONE
+test -d $CFG_PATH || fatal "Config path is not found ($CFG_PATH)"
+
+MAC_PATH=${CFG_PATH}mac/
+test -d $MAC_PATH || mkdir $MAC_PATH
+
+IFACE_PATH=${CFG_PATH}iface/
+test -d $IFACE_PATH || mkdir $IFACE_PATH
+
+# Если test, то вот так:
+route='echo ! route';
+ifconfig='echo ! ifconfig';
+# Иначе устанавливаем нормальные значеня
+
+
+# ПРоверяем пуст ли macs/
+function is_no_macs {
+  f=`ls -1 ${MAC_PATH}`
+  test -z "$f"
+}
+
+function is_iface_wifi {
+  iface=$1
+  shift
+  for ii in $*; do
+    if [ "$ii" = "$iface" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+
+# Ищем карты
+function search_cards {
+
+  echo "No MAC's, search cards: "
+  WIFI=`cat /proc/net/wireless  | grep eth | sed 's/.*\(eth.\):.*/\1/'`
+  IFACES=`cat /proc/net/dev | grep eth | sed 's/.*\(eth.\):.*/\1/'`
+  WIFI="eth0"
+  test -z "$IFACES" && fatal "No IFACES cards found"
+  test -z "$WIFI" && error "WRANING! No one WIFI cards found!"
+  # are_many_ifaces $WIFI && fatal "WIFI cards too many: $WIFI"
+  nl=0;nw=0;
+  for i in $IFACES; do
+    if is_iface_wifi $i $WIFI; then
+       iface="wifi$nw"
+       echo -n "$i is $iface"
+       nw=`echo $nw+1 | bc`
+       is_wifi=1
+    else
+       iface="local$nl"
+       echo -n "$i is $iface"
+       nl=`echo $nl+1 | bc`
+       is_wifi=0
+    fi
+
+    mac=`/sbin/ifconfig $i 2>/dev/null | grep HWaddr | sed 's/.*HWaddr //' | sed 's/\n//'`
+
+    test -z "$mac" && fatal "No MAC found for $i"
+    echo " : $mac"
+
+    if test -d ${CFG_PATH}$iface; then
+      #rm -f ${MAC_PATH}$mac
+      ln -s ${CFG_PATH}$iface ${MAC_PATH}$mac || fatal "Can't make symlink $iface->$mac"
+      echo $mac > ${CFG_PATH}$iface/mac
+      echo $i > ${CFG_PATH}$iface/iface
+      echo $is_wifi > ${CFG_PATH}$iface/is_wifi
+      echo $iface > ${CFG_PATH}$iface/iface_name
+    else
+      fatal "No $iface directory is found";
+    fi
+
+  done
+
+}
+
+function make_ifaces {
+  rm -f ${IFACE_PATH}*
+  for mac in `ls -1 ${MAC_PATH}`; do
+    iface_name=`cat ${MAC_PATH}$mac/iface_name`
+    iface=`cat ${MAC_PATH}$mac/iface`
+    echo "Install $iface_name -> $iface : $mac"
+    ln -s ${CFG_PATH}$iface_name ${IFACE_PATH}$iface || fatal "Can't make symlink $iface_name->$iface"
+    NET=`cat ${CFG_PATH}$iface_name/address 2>/dev/null`
+    test "$NET" || fatal "No address for $iface_name/$iface"
+    IP=`ipcalc -b $NET | grep Address | awk '{print $2}'`
+    MASK=`ipcalc -b $NET | grep mask | awk '{print $2}'`
+    BCAST=`ipcalc -b $NET | grep Broadcast | awk '{print $2}'`
+    echo -e "Set interface:  $iface\t$IP/$MASK ($BCAST)"
+
+    $ifconfig ${iface} ${IP} netmask ${MASK} broadcast ${BCAST}
+
+  done
+}
+
+is_no_macs && search_cards
+
+$ifconfig lo 127.0.0.1
+$route add -net 127.0.0.0 netmask 255.0.0.0
+
+make_ifaces
+
+GATEWAY=`cat ${CFG_PATH}GATEWAY`
+if [ "$GATEWAY" ]; then
+  # /sbin/route add -net 10.100.0.0 netmask 255.255.0.0 gw 10.100.1.1 metric 1
+  echo "Gateway is $GATEWAY"
+  $route add default gw ${GATEWAY} netmask 0.0.0.0 metric 1
+else
+  echo "There is no GATEWAY!"
+fi

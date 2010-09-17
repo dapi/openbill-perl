@@ -1,0 +1,9 @@
+[% INCLUDE header.txt %]
+Subject: Новый клиент: $client.contact_name по адресу $client.address
+
+Клиент: $client.client
+Адрес:    $client.address
+Дата регистрации:   $client.reg_date
+[% IF client.comment %]Комментарий: $client.comment[% END %]
+
+[% INCLUDE footer.txt %]

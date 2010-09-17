@@ -1,0 +1,126 @@
+
+
+
+
+
+
+
+############################
+#
+# Старьё
+#
+##############
+
+
+sub recharge {                  #  Генерировать charge-records, сбрасывать все данные оп периоду и устанавливать необходимые данные по сервису
+  my ($self,$period) = @_;
+  die 'not implemented';
+  logger()->debug("Пересчёт периода ",$period->string());
+  table('charge')->Delete({period_id=>$period->ID()});
+  $self->resetPeriod($period);
+  $self->generatePeriodStatus($period);
+  my $traffic = $self->generateTrafficData($period,$status);
+  my $tariffes = $self->generateTariffesList($period);
+  my $activations = $self->generateActivationsLog($period);
+  my $summa = 0;
+  foreach my $cid (keys %$activations) {
+    my $tariff = tariff($tariffes->{$cid} || fatal("Нет тарифа для клиента cid:$cid"));
+    my $a = $activations->{$cid};
+    $summa+=$self->rechargeClient($period,$status,client($cid),
+                                  $tariff,$traffic->{$cid},$a);
+    delete $traffic->{$cid};
+  }
+  foreach my $cid (keys %$traffic) {
+    my $tariff = tariff($tariffes->{$cid} || fatal("Нет тарифа для клиента cid:$cid"));
+    $summa+=$self->chargeClient($period,$status,client($cid),
+                                $tariff,$traffic->{$cid});
+  }
+  logger()->debug("Списано абонплаты: $summa за пересчёт периода $self");
+  # NOTE Почемуто выдаёт сумму отличную от то  что в базе
+  print FormatMoney($summa)."\n" if setting('terminal');
+  return $status;
+}
+
+sub RechargeClient {
+  my ($self,$client,$period,$tariff) = @_;
+  die 'not implemented';
+  my $str = "Пересчёт клиента ".$client->GetName()." за период ".$period->string(1)." для службы ".$period->GetService()->string();
+  logger()->debug($str);
+  print "$str\n" if setting('terminal');
+
+  # TODO Еслизапускается из переустановки тарифа или активации - то не имеет смысл
+  # заново собирать траифы и активацию
+  unless ($tariff) {
+    my $t = $client->FindPrevTariff($period->GetService(),$period->Data('start'));
+    unless ($t) {
+      logger()->error("Не установлен тариф на дату: ".$period->Data('start')." для клиента ".$client->GetName());
+      return undef;
+    }
+    $tariff= tariff($t->{tariff_id});
+  }
+  my $status=$self->getPeriodStatus($period);
+  my $traffic = $self->getClientsTrafficForRecharge($period,
+                                                    $status,
+                                                    $client->ID());
+  my $activations = $client->getActivationsLog($period);
+  return $self->rechargeClient($period,$status,$client,
+                               $tariff,$traffic,$activations);
+}
+
+
+sub rechargeClient {
+  my ($self,$period,$status,$client,$tariff,$traffic,$activations) = @_;
+  die 'not implemented';
+  fatal("Неизвестен тариф") unless $tariff;
+  unless ($activations) {
+    logger()->error("Есть трафик, хотя клиент отключён cid".$client->ID);
+    #    $period->DeleteChargeRecord($client);
+    $activations=[];
+  }
+  my $cr=$tariff->NewChargeRecord($period,$client,$activations);
+  my $summa = 0;
+  $summa += $tariff->ChargeSeason($period,$cr,$status->{season_date});
+  $summa += $tariff->ChargeTraffic($period,$cr,$traffic,$status->{dayshot_id});
+  $cr->{summa}=$summa;
+  $cr->{is_correct}=1;
+  $period->ReplaceChargeRecord($cr);
+  logger()->debug("С клиента cid:$cr->{client_id} переснято $summa руб");
+  return $summa;
+}
+
+sub getClientsTrafficForRecharge {
+  my ($self,$period,$status,$cid) = @_;
+  my $start = filter('date')->ToSQL($period->Data('start'));
+  my $end = filter('date')->ToSQL($period->Data('end'));
+  my $dayshot_id = $status->{dayshot_id};
+  return {} unless $dayshot_id;
+  my $sth = db()->
+    Select(qq(select class, sum(bytes) as bytes
+              from day_traffic, host_attach
+              where shot_id<=$dayshot_id
+              and day_traffic.date>='$start' and day_traffic.date<='$end'
+              and client_id=$cid
+              and host_attach.ip=day_traffic.ip
+              and from_ym<='$start'
+              and (to_ym<from_ym or to_ym>='$start')
+              group by class order by class));
+  my %classes;
+  while (my $rec=$sth->fetchrow_hashref()) {
+    $classes{$rec->{class}}+=$rec->{bytes};
+  }
+  return \%classes;
+}
+
+sub getPeriodStatus {
+  my ($self,$period)=@_;
+  return {dayshot_id=>$period->Data('dayshot_id'),
+          season_date=>$period->Data('season_date')};
+}
+
+
+# TODO переместить в period::IPTraff?
+sub resetPeriod {
+  my ($self,$period) = @_;
+  $period->SaveStatus({season_date=>undef,
+                       dayshot_id=>undef});
+}

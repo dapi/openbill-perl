@@ -1,0 +1,42 @@
+#echo "Deny scans.."
+#
+# various SCAN types, deny them all
+
+# TODO запретить broadcast с внешнего интерфейса
+
+
+# Windows Messanger. WinXP sends packets to this port
+# Делается для того, чтобы не попадало в лог
+$fw -A INPUT -p udp --dport 1900 -j DROP
+$fw -A INPUT -p udp --dport 137:139 -j DROP
+$fw -A INPUT -p tcp --dport 137:138 -j DROP
+
+$fw -A INPUT -p tcp --sport 135 $log "DROP=135 "
+$fw -A INPUT -p tcp --sport 135 -j DROP
+
+$fw -A INPUT -p tcp --dport 135 $log "DROP=135 "
+$fw -A INPUT -p tcp --dport 135 -j DROP
+
+#$fw -A INPUT -d 255.255.255.255/255.255.255.255 $log "DROP=255...255/255...255 "
+$fw -A INPUT -d 255.255.255.255/255.255.255.255 -j DROP
+$fw -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH $log "DROP=tcp-flags-F,U,P "
+$fw -A INPUT -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
+$fw -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG $log "DROP=tcp-flags-S,R,A,F,U "
+$fw -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
+$fw -A INPUT -p tcp --tcp-flags ALL ALL $log "DROP=tcp-flags-ALL "
+$fw -A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+$fw -A INPUT -p tcp --tcp-flags ALL FIN $log "DROP=tcp-flags-F "
+$fw -A INPUT -p tcp --tcp-flags ALL FIN -j DROP
+$fw -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST $log "DROP=tcp-flags-S,R "
+$fw -A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+$fw -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN $log "DROP=tcp-flags-S,F "
+$fw -A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+$fw -A INPUT -p tcp --tcp-flags ALL NONE $log "DROP=tcp-flags-NONE "
+$fw -A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+
+#
+# bad flags
+$fw -A INPUT -p tcp --tcp-option 64 $log "DROP=tcp-bad-flags-64 "
+$fw -A INPUT -p tcp --tcp-option 64 -j DROP
+$fw -A INPUT -p tcp --tcp-option 128 $log "DROP=tcp-bad-flags-128 "
+$fw -A INPUT -p tcp --tcp-option 128 -j DROP

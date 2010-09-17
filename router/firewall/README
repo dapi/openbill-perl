@@ -1,0 +1,2 @@
+Не, просто ты ident неправильно закрыл. Его нужно закрывать как -j REJECT \
+--reject-with icmp-host-unreachable (icmp-net-unreachable), а не как DROP.

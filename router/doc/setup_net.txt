@@ -1,0 +1,121 @@
+Документация для программы setup_net.sh
+
+Программа лежит в каталоге openbill/router/bin/setup_net.sh
+
+setup_net работает с каталогом /etc/network/ и его подкаталогами.
+
+
+Параметер test
+
+
+
+
+*********************
+КАТАЛОГ /etc/network/
+*********************
+
+   mac/   (каталог с mac-адресами)
+      00:40:96:48:A5:D2/ (каталог с определениями для карты с этим mac-адресом,
+                          может быть ссылкой на wifi/, local/ или ???/. Эту ссылку
+                          setup_net может создавть автоматически (см. функцию search_cards))
+      00:00:08:00:00:24/ (тоже самое)
+
+   iface/ (каталог с интерфейсами, все ссылки в этом каталоге удаляются и
+           автоматически создаются заново при старте)
+      eth0/ (ссылается на ../mac/00:40:96:48:A5:D2/)
+      eth1/ (ссылается на ../mac/00:00:08:00:00:24/)
+
+   wifi/  (каталог с определниями для wifi-карты)
+   local/ (каталог с определиями для локальной-карты)
+   ???/ (каталог с определениями для любой другой карты)
+
+   GATEWAY (файл с адресом шлюза)
+
+
+
+
+
+*********************
+КАТАЛОГ СЕТЕВОЙ КАРТЫ (wifi/, local/, 00:40:96:48:A5:D2/, iface/eth1/ и тд)
+*********************
+
+Содержимое этого каталога никогда автоматически не генерируется,
+только в ручную.
+
+  NET - маска подсети
+  IP  - IP-адрес
+  LOCAL - 0 или 1
+
+
+
+
+
+*********************
+АЛОГОРИТМ
+*********************
+
+
+1) Запускает процедуру search_cards если, каталог mac/ пуст
+
+2) Удаляются все ссылки из каталога iface/. Для каждой сетевой карты
+(/proc/net/dev | grep eth) узнаётся её mac-адрес (ifconfig eth?)
+создаётся соответсвующая ссылка в каталоге iface/ из каталога mac/
+
+3) Идём по всем подкаталогам из iface/ и инициализируем сетевые карты.
+
+
+
+
+*********************
+ФУНКЦИЯ search_cards:
+*********************
+
+Если каталог mac/ пуст, то запускается эта процедура.
+
+(Определяем wifi интерфейс)
+WIFI=`cat /proc/net/wireless  | grep eth | sed 's/.*\(eth1\):.*/\1/'
+
+(Находим все интерфейсы)
+IFACES=`cat /proc/net/dev | grep eth | sed 's/:.*$//'`
+
+(Определяем какой интерфейс не wifi, то есть локальный)
+
+for i in $IFACES; do
+  if [ "$i" != "$AIRO" ]; then
+    LOCAL=$i
+    break
+  fi
+done
+z1
+Находим mac-адреса через ifconfig $iface, получаем $mac_wifi и $mac_local
+
+Делаем ссылки mac/$mac_wifi -> wifi/ и mac/$mac_local -> local/
+
+Всё.
+
+*********************
+ИНИЦИАЛИЗАЦИЯ КАРТ:
+*********************
+
+Процедура должна пробегать во всем интерфейсам в каталоге iface/ и
+инициализировать их. За основу можно взять этот код:
+
+
+
+PATH=/usr/sbin:/sbin/:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin
+
+/sbin/ifconfig lo 127.0.0.1
+/sbin/route add -net 127.0.0.0 netmask 255.0.0.0
+
+REAL_IP=`ipcalc -b $REAL_NET | grep Address | awk '{print $2}'`
+REAL_MASK=`ipcalc -b $REAL_NET | grep mask | awk '{print $2}'`
+REAL_BCAST=`ipcalc -b $REAL_NET | grep Broadcast | awk '{print $2}'`
+echo -e "Real:  ${AIRO}:0\t$REAL_IP/$REAL_MASK ($REAL_BCAST)"
+
+/sbin/ifconfig ${AIRO} ${REAL_IP} netmask ${REAL_MASK} broadcast ${REAL_BCAST}
+
+GATEWAY=`cat /etc/orionet/gateway`
+if [ "$GATEWAY" ]; then
+   /sbin/route add -net 10.100.0.0 netmask 255.255.0.0 gw 10.100.1.1 metric 1
+   /sbin/route add default gw ${GATEWAY} netmask 0.0.0.0 metric 1
+fi

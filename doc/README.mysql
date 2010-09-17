@@ -1,0 +1,90 @@
+Сделать в /service
+
+увеличить предельный размер запроса, запустив mysqld с опцией -O max_allowed_packet=# (по умолчанию 1 Mб)
+
+select data,ip,sum from table ip_stats group by
+
+Опмитизация хранилища:
+выключен:
+myisamchk --quick --check-only-changed --sort-index --analyze
+включен:
+mysqlcheck --repair --analyze --optimize --all-databases --auto-repair
+
+Апдейт статистики оптимизатора:
+myisamchk --analyze
+
+
+Рекомендуется регулярно выполнять:
+isamchk -r --silent --sort-index -O sort_buffer_size=16M db_dir/*.ISM
+myisamchk -r --silent --sort-index -O sort_buffer_size=16M db_dir/*.MYI
+
+
+
+/usr/local/mysql/bin/mysqld_safe \
+--user=mysql --myisam-recover --binlog-ignore-db=openbill_example_binlog_cache_size=512K \
+-O key_buffer=32M -O sort_buffer=4M -O read_buffer_size=1M &
+
+
+Может увеличить myisam_bulk_insert_tree_size для более быстрой вставки
+
+
+
+1802493 записей
+
+1. вставляются за 19 мин (8 параметров, 7 индексов)
+
+select count(bytes) from ip_stats - 0.03 сек
+select count(bytes), src_ip from ip_stats group by src_ip - 4-сек;
+select count(bytes) from ip_stats where src_ip='10.100.0.1' - 3 сек;
+
+2. таблица без индексов за 5 мин.
+
+select count(bytes) from ip_stats - 0.00 сек
+select count(bytes), src_ip from ip_stats group by src_ip - 5.23 сек;
+select count(bytes) from ip_stats where src_ip='10.100.0.1' - 5 сек;
+
+ответы на запросы не кешируются
+
+3. Таблица innnoDB без индексов - 6-8 мин. Долго удаляет.
+select count(bytes) from ip_stats - 10 сек
+select count(bytes), src_ip from ip_stats group by src_ip - 12 сек
+select count(bytes) from ip_stats where src_ip='10.100.0.1' - 10 сек
+
+4. Таблица innnoDB , 6 индексов - 12 мин
+select count(bytes) from ip_stats - 10 сек, -0.6 сек
+select count(bytes), src_ip from ip_stats group by src_ip - 2 мин
+select count(bytes) from ip_stats where src_ip='10.100.0.1' - 4 сек, 0.6 сек
+
+некоторые запросы некешируются, попробовать с binlog-ом
+
+
+257499 записей
+2m2s - 1m56s
+
+select count(bytes) from ip_stats  -0.6 сек
+select count(bytes), src_ip from ip_stats group by src_ip - 1 сек
+select count(bytes) from ip_stats where src_ip='10.100.0.1' - 0.4 сек
+select DATE_FORMAT(packet_time,'%Y-%m-%d'), sum(bytes), src_ip from ip_stats group by DATE_FORMAT(packet_time,'%Y-%m-%d'), src_ip - 2.54 сек
+
+
+с колонками date,time - 3m42s + индекс (date,src_ip), (date,dst_ip)
+
+select date, sum(bytes), src_ip from ip_stats group by date, src_ip - 0.71
+
+
+
+
+
+
+
+-----------------
+select log_shot.router_id, @t:=from_unixtime(logtime-mod(logtime,300)),
+@t, @t, dst_ip, src_ip,
+(src_ip=1407065919 or 49320 = src_ip >> 16 or 2660 = src_ip >> 16 or src_ip=169090605 or src_ip=169090607 or src_ip=169090621 or src_ip=3647713543 or src_ip=3647713716 or src_ip=3647713732 or src_ip=169090608 or src_ip=169090606 or src_ip=3647713609 or src_ip=174326282 or src_ip=169090569 or src_ip=169090576 or src_ip=3647713548 or src_ip=169090580 or src_ip=3577432786 or src_ip=169090566 or src_ip=169090587 or src_ip=169090590 or src_ip=169090597 or src_ip=169090619 or src_ip=169090603 or src_ip=169093129 or src_ip=169090575 or src_ip=169093138 or src_ip=169093140 or src_ip=169093141 or src_ip=169093143 or src_ip=174327324 or src_ip=169093144 or src_ip=169090618 or src_ip=3577432786),
+sum(traflog.bytes), client_id
+from log_shot, traflog left join host on (host.ip=traflog.dst_ip >> host.bits
+and host.router_id=traflog.router_id) where traflog.shot_id=log_shot.shot_id
+and log_shot.shot_id>1394799 and log_shot.shot_id<=1395799
+and log_shot.router_id=2 and traflog.router_id=2
+and (12625920 = dst_ip >> 8 or 680964 = dst_ip >> 8 or dst_ip=169090607 or dst_ip=174326785)
+group by log_shot.router_id, from_unixtime(logtime-mod(logtime,300)), dst_ip, src_ip;

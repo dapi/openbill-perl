@@ -1,0 +1,64 @@
+СЛУЖБЫ (Service)
+
+openbill::Service::IPTraff - счётсчик ip-трафика
+openbill::Service::Email   - email-служба
+
+
+
+1) Модули служб прописываются в xml-конфиге
+
+    <modules>
+      <!-- Службы -->
+      <service>openbill::Service::IPTraff</service>
+
+      <!-- Коллекторы -->
+      <collector>openbill::Collector::Ulog</collector>
+      <collector>openbill::Collector::Trafd</collector>
+
+      <!-- Привратники -->
+      <janitor>openbill::Janitor::IPTables</janitor>
+
+    </modules>
+
+2) Модули служб регистрируются в системе (банальная запись в таблицу service):
+
+   Пример:
+
+   > create_service
+   Название: email
+   Модуль: openbill::Service::Email
+   Комментарий: Email-служба
+
+3) API Модуля службы (реализацию см. в openbill::Service::IPTraff и родитель openbill::Service)
+
+   Список процедур, которые необходимо переопределить)
+
+   sub moduleDesc { 'Описание службы' }
+
+   sub CheckDatabase { проверяет базу }
+
+   sub UpdateTraffic { переводит данные с коллектора в собственную таблицу трафика }
+
+   sub CheckTraffic { проверяет таблицу проданного трафика с таблицей купленного }
+
+   sub GetClientsTraffic { my ($self,$period,$client) = @_;
+
+   Возвращает клиентский трафик за указанный период, эти данные
+   передаются напрямую в NewCharge выбранного тарифа
+
+   }
+
+   sub GetNewTraffic { my ($self,$period) = @_; Возвращает данные о последнем, со времени
+   последнего расчёта изменении в трафике.
+
+   Возвращается хэш CLIENT_ID->traffic. Значение traffic передаётся
+   напрямую в MakeCharge клиента, который в свою очередь запускает
+   необходимые процедуры из тарифа.
+
+   }
+
+   sub GetTraffic возвращает трафик группированный по заданным
+   параметрам, вызывается из shell администратором для проверки
+
+   sub UpdateJanitors Заставляет привратником включить или выключить
+   службу (email/host или тп) по последним изменениям.

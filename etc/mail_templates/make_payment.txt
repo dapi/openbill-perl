@@ -1,0 +1,14 @@
+[% INCLUDE header.txt %]
+Subject: Принят платёж на сумму [% payment.summa_order | money %]
+
+Уважаемый $client.name!
+
+На счёт ORIONET поступил следующий платёж:
+
+Дата платежа: $payment.date, способ платежа: $payment.method.name
+[% IF payment.summa_order==payment.summa %]Сумма: [% payment.summa | money %][% ELSE %]Сумма оплаты: [% payment.summa_order | money %], сумма зачисления: [% payment.summa | money %][% END %]
+[% IF payment.comment %]Описание платежа: $payment.comment[% END %]
+
+[% INCLUDE show_balance.txt %]
+
+[% INCLUDE footer.txt %]

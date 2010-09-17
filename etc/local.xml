@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="koi8-r"?>
+<xml>
+  <system_name>ORIONET Real Billing System</system_name>
+  <databases>
+
+  <database user="openbill" password="pfrjkljdfyysq" character_set="koi8r" type="sql">
+      <datasource Warn="1" AutoCommit="0" >DBI:mysql:database=orionet;host=localhost</datasource>
+    </database>
+
+    <database name="radius" user="radius" password="" type="sql" quote_tables="1">
+      <datasource Warn="1" AutoCommit="0" >DBI:Pg:dbname=radius;host=vpn.orionet.ru</datasource>
+    </database>
+
+
+  </databases>
+  <notifies>
+    <notify name="balance_alert">
+      <mail email="client"/>
+<!--      <mail email="olegarx@orionet.ru" name="Олег"/> -->
+    </notify>
+    <notify name="create_host">
+      <!--      <mail email="olegarx@orionet.ru" name="Олег"/>-->
+    </notify>
+    <notify name="attach_host">
+<!--      <mail email="olegarx@orionet.ru" name="Олег"/> -->
+      <mail email="client"/>
+    </notify>
+    <notify name="create_client">
+      <mail email="client"/>
+    </notify>
+    <notify name="create_client_sms">
+<!--      <mail email="79023270130@sms.shgsm.ru"/>-->
+    </notify>
+    <notify name="make_payment">
+<!--      <mail email="pay@orionet.ru" name="Бухгалтерия ORIONET"/> -->
+      <mail email="client"/>
+    </notify>
+    <notify name="change_tariff">
+      <mail email="client"/>
+    </notify>
+    <notify name="activate_client">
+      <mail email="client"/>
+    </notify>
+    <notify name="deactivate_client">
+      <mail email="client"/>
+    </notify>
+    <notify name="modify_host">
+<!--      <mail email="olegarx@orionet.ru"/> -->
+      <mail email="client"/>
+    </notify>
+    <notify name="attach_host">
+<!--      <mail email="olegarx@orionet.ru"/> -->
+      <mail email="client"/>
+    </notify>
+    <notify name="create_router">
+      <mail email="danil@orionet.ru"/>
+      <mail email="ruslan@orionet.ru"/>
+    </notify>
+    <notify name="modify_router">
+      <mail email="danil@orionet.ru"/>
+      <mail email="ruslan@orionet.ru"/>
+    </notify>
+  </notifies>
+
+  <oriopay>
+  	<shop_key>qssjvn2387qwkans128$</shop_key>
+  </oriopay>
+
+  <loyalty_programme>
+	<speed_bonus_kbps>16</speed_bonus_kbps>
+	<speed_bonus_max>128</speed_bonus_max>
+  </loyalty_programme>
+
+</xml>

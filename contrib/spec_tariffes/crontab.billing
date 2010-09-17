@@ -1,0 +1,1 @@
+*/10 * * * * /home/danil/projects/openbill/contrib/spec_tarrifes/spec_tarifes_billing.sh /home/littlesavage/spec_tariffes.txt

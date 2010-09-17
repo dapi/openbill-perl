@@ -1,0 +1,13 @@
+[% INCLUDE header.txt %]
+Subject: Ваш баланс [% payment.summa_order | money %]
+
+Уважаемый $client.name!
+
+[% IF old %]
+$from_date сменился тариф с $old.name на $new.name[% ELSE %]
+$from_date установлен тариф $new.name
+[% END %]
+
+[% INCLUDE show_balance.txt %]
+
+[% INCLUDE footer.txt %]

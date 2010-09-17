@@ -1,0 +1,16 @@
+[% INCLUDE header.txt %]
+Subject: Присоединение хоста $host.host к клиенту $client.client
+
+$date к клиенту $client.client, находящемуся по адресу:
+$client.address
+
+присоединён хост:
+$host.host
+
+по адресу:
+$host.address
+
+на роутере: $host.router
+
+
+[% INCLUDE footer.txt %]

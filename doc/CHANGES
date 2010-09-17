@@ -1,0 +1,14 @@
+
+create table city (
+        city_id integer auto_increment not null,
+	name varchar(255) unique,
+	comment varchar(255),
+        primary key (city_id)
+) type=innodb;
+
+alter table street add city_id integer not null;
+alter table building add is_secret integer not null default 0;
+
+insert into city values (1,'Чебоксары','');
+
+update street set city_id=1;

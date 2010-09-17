@@ -1,0 +1,15 @@
+echo "Setup users"
+
+$fw -F USER_FORWARD
+#$fw -F USER_INPUT
+#$fw -F USER_OUTPUT
+
+chmod a+x $USERS
+
+if [ -x $USERS ]; then
+ . $USERS
+fi
+
+if [ -f $ETHERS_FILE ]; then
+ /sbin/arp -f $ETHERS_FILE
+fi

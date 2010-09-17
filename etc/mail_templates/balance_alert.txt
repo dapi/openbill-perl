@@ -1,0 +1,10 @@
+[% INCLUDE header.txt %]
+Subject: Ваш баланс [% client.balance | money %]
+
+Уважаемый(ая) $client.name!
+
+Сообщаем, что ваш баланс достиг отметки об оповещении ([% client.balance_to_alert | money %])
+
+[% INCLUDE show_balance.txt %]
+
+[% INCLUDE footer.txt %]

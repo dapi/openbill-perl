@@ -1,0 +1,74 @@
+Название openbill Striker
+
+shell
+   операции с таблицами manager, street, building, address, client
+
+проверка mysql 1000 клиентов по 1Gb в месяц. Статистика каждые пять минут.
+
+charger: создание таблиц tarif, router, collector, host.
+
+ревлизация таблиц и функционала host_attach, host_activation, account_activation, tarif_log
+
+По запросу клиента или charger-а запускается сбор статистики по указанному коллектору.
+
+router должен уметь только:
+1) файрволл
+2) открывать-закрыть доступ пользователям как скажут
+3) собирать статистику, хранить её три дня и отдавать по запросу
+4) восстанавливать своё состояние полсе сбоя
+5) в качестве бонуса http/ftp
+
+accountd, ulogd, ulog-acctd, IPStats
+
+use Net::IP::Match::__MATCH_IP для определения вхождения IP в сеть
+
+
+Идеальный биллинг - биллинг написанный самим собой.
+
+
+А для низких мыслей были числа,
+Как домашний подъяремный скот.
+Потому что все оттенки смысла
+Умное число передает.
+Н. С. Гумилев. "Числа".
+
+
+
+
+
+
+group=time
+
+12:00=>12,
+13:00=>34,
+all=>46
+
+group=time,ip,class
+
+12:00=>{0=>12,
+        1=>24,
+        all=>36},
+13:00=>{0=>10,
+        1=>20,
+        all=>36},
+all=>{0=>22,
+      1=>44,
+      all=>36}
+
+
+
+
+date->time->ip->class
+date->time->ip->all
+date->time->all->all
+date->all->all->all
+all->all->all->all
+
+time->ip->class
+time->ip->all
+time->all->class
+time->all->all
+all->ip->class
+all->ip->all
+all->all->all
+all->all->class

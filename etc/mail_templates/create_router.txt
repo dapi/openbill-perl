@@ -1,0 +1,15 @@
+[% INCLUDE header.txt %]
+Subject: Создан роутер: $router.hostname по адресу $router.address [% IF router.altitude %] на высоте $router.altitude м.[% END %]
+
+Создан новый роутер: $router.hostname
+
+hostname: $router.hostname
+MAC:      $router.mac
+IP:       $router.ip
+Адрес:    $router.address
+[% IF router.altitude %]Высота: $router.altitude м.[% END %]
+Роутер:   $router.router
+[% IF router.comment %]Комментарий: $router.comment[% END %]
+
+
+[% INCLUDE footer.txt %]

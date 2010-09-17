@@ -1,0 +1,16 @@
+
+#
+# fragmented packets
+$fw -A INPUT -f $log "DROP=fragmented "
+$fw -A INPUT -f -j DROP
+#
+# deny tcp connection attempts
+$fw  -A INPUT -p tcp -m state --state INVALID,NEW $log "DROP=tcp_in "
+$fw  -A INPUT -p tcp -m state --state INVALID,NEW -j DROP
+
+# deny all other
+$fw -A INPUT $log "DROP=in "
+$fw -A INPUT -j DROP
+
+$fw -A OUTPUT $log "DROP=out "
+$fw -A OUTPUT -j $DENY

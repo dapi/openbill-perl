@@ -1,0 +1,12 @@
+[% INCLUDE header.txt %]
+Subject: Доступ в интернет ОТКЛЮЧЕН
+
+Уважаемый(ая) $client.name!
+
+С $date доступ в интернет ОТКЛЮЧЕН.
+
+[% IF comment %]Коментарий: $comment[% END %]
+
+[% INCLUDE show_balance.txt %]
+
+[% INCLUDE footer.txt %]

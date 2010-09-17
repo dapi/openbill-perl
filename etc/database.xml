@@ -1,0 +1,885 @@
+<?xml version="1.0" encoding="koi8-r"?>
+<xml>
+
+
+  <filters>
+    <filter name="char" handler="dpl::Db::Filter::char"/>
+    <filter name="ip" handler="dpl::Db::Filter::ip"/>
+    <filter name="numeric" handler="dpl::Db::Filter::numeric"/>
+    <filter name="boolean" handler="dpl::Db::Filter::boolean"/>
+    <filter name="boollog" handler="dpl::Db::Filter::boollog"/>
+
+    <filter name="serializer" handler="dpl::Db::Filter::serialize">
+      <portable>0</portable>
+      <serializer>Data::Dumper</serializer>
+      <compress>0</compress>
+    </filter>
+
+    <filter name="datetime" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input locale="ru_RU.KOI8-R" timezone="Europe/Moscow"/><!--   shift="+180" shift не учавствует GMT, потому что при преобразовании str2time оно устанавливается в GMT -->
+        <output class="openbill::DataType::DateTime" locale="ru_RU.KOI8-R" timezone="Europe/Moscow">object</output> <!-- %e %B %H:%M -->
+      </from_sql>
+      <to_sql>
+        <input>object</input>
+        <output timezone="Europe/Moscow">%Y%m%d%H%M%S</output>
+      </to_sql>
+    </filter>
+
+    <filter name="datetime_obj" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input locale="ru_RU.KOI8-R" timezone="Europe/Moscow"/><!--   shift="+180" shift не учавствует GMT, потому что при преобразовании str2time оно устанавливается в GMT -->
+        <output locale="ru_RU.KOI8-R" timezone="Europe/Moscow">object</output> <!-- %e %B %H:%M -->
+      </from_sql>
+      <to_sql>
+        <input>object</input>
+        <output locale="ru_RU.KOI8-R" timezone="Europe/Moscow">%Y%m%d%H%M%S</output>
+      </to_sql>
+    </filter>
+
+
+
+    <filter name="date" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input  locale="ru_RU.KOI8-R" timezone="Europe/Moscow" shift="+180"/>
+        <output class="openbill::DataType::Date" locale="ru_RU.KOI8-R" timezone="Europe/Moscow">object</output>
+      </from_sql>
+      <to_sql>
+        <input timezone="Europe/Moscow">object</input>
+        <output>%Y-%m-%d</output>
+      </to_sql>
+    </filter>
+
+    <filter name="ym" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input  locale="ru_RU.KOI8-R" timezone="Europe/Moscow" shift="+180"/>
+        <output class="openbill::DataType::Date" locale="ru_RU.KOI8-R" timezone="Europe/Moscow">object</output>
+      </from_sql>
+      <to_sql>
+        <input>object</input>
+        <output locale="ru_RU.KOI8-R" ifnull="0000">%Y-%m-%d</output>
+      </to_sql>
+    </filter>
+
+
+    <filter name="time" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input locale="C"/>
+        <output class="openbill::DataType::Time" locale="ru_RU.KOI8-R">object</output>
+      </from_sql>
+      <to_sql>
+        <input>object</input>
+        <output  locale="ru_RU.KOI8-R">%T</output>
+      </to_sql>
+    </filter>
+
+    <filter name="timestamp" handler="dpl::Db::Filter::date">
+      <from_sql>
+        <input locale="C"/>
+        <output class="openbill::DataType::DateTime" locale="ru_RU.KOI8-R">object</output>
+      </from_sql>
+      <to_sql>
+        <input>object</input>
+        <output locale="ru_RU.KOI8-R">%Y%m%d%H%M%S</output>
+      </to_sql>
+    </filter>
+  </filters>
+
+  <tables>
+
+    <table name="connection_type" table="connection_type">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name" type="char"  length="255"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+
+    <table name="geo_area" table="geo_area">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+
+    <table name="manager" table="manager">
+      <attributes>
+        <id name="manager_id" type="numeric" increment="auto"/>
+        <attr name="name" unique="1" type="char" length="255" />
+        <attr name="password"  type="char" length="80" />
+        <attr name="login"  type="char" length="50" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="is_active"  type="boolean"/>
+        <attr name="group_id"  type="numeric"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="mgroup" table="mgroup">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name" unique="1" type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="is_admin"  type="boolean"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="mgroup_method" table="mgroup_method">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="mgroup_id" type="numeric" length="255" />
+        <attr name="object" unique="1" type="char" length="255" />
+        <attr name="method" unique="1" type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>object, method</order>
+    </table>
+
+    <table name="manager_session" table="manager_session">
+      <attributes>
+        <id name="manager_id" type="numeric" increment="auto"/>
+        <attr name="create_time"  type="timestamp" />
+        <attr name="last_time" type="datetime"/>
+        <attr name="soft" type="char" length="200"/>
+        <attr name="version" type="char" length="200"/>
+        <attr name="session_id"  type="char" length="128"/>
+      </attributes>
+    </table>
+
+
+    <table name="locker" table="locker">
+      <attributes>
+        <attr name="name"  type="char" length="80"/>
+        <attr name="is_read"  type="boolean"/>
+        <attr name="is_write"  type="boolean"/>
+        <attr name="pid"  type="numeric"/>
+        <attr name="timestamp"  type="datetime"/>
+        <attr name="record"  type="numeric"/>
+        <attr name="comment" type="char" length="255"/>
+      </attributes>
+      <order>timestamp</order>
+    </table>
+
+    <table name="street" table="street">
+      <attributes>
+        <id name="street_id" type="numeric" increment="auto"/>
+        <attr name="city_id" type="numeric"/>
+        <attr name="name"  type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="email" table="client_email">
+      <attributes>
+        <id name="email" type="char" length="255" />
+        <attr name="client_id" type="numeric"/>
+        <attr name="createtime"  type="datetime" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>email</order>
+    </table>
+
+    <table name="client_status" table="client_status">
+      <attributes>
+        <id name="id" type="char" length="255" />
+        <attr name="name"  type="char" length="255" />
+        <attr name="bgcolor"  type="char" length="255" />
+        <attr name="fgcolor"  type="char" length="255" />
+      </attributes>
+      <order>id</order>
+    </table>
+
+    <table name="city" table="city">
+      <attributes>
+        <id name="city_id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="bill_delivery" table="bill_delivery">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255" />
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="building" table="building">
+      <attributes>
+        <id name="building_id" type="numeric" increment="auto"/>
+        <attr name="street_id" type="numeric"/>
+        <attr name="area_id" type="numeric"/>
+        <attr name="dealer_id" type="numeric"/>
+        <attr name="is_connected" type="boolean"/>
+        <attr name="connection_type_id" type="numeric"/>
+
+        <attr name="is_secret" type="boolean"/>
+        <attr name="number" type="char"  length="255"/>
+        <attr name="comment"  type="char" />
+
+        <attr name="price"  type="numeric" />
+        <attr name="price_firm"  type="numeric" />
+        <attr name="date_connect"  type="date" />
+        <attr name="description"  type="char" length="255" />
+
+      </attributes>
+      <order>number, street_id</order>
+    </table>
+
+    <table name="building_holder" table="building_holder">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name" type="char"  length="255"/>
+        <attr name="contact_name" type="char"  length="255"/>
+        <attr name="contact_ohone" type="char"  length="255"/>
+        <attr name="address" type="char"  length="255"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="address" table="address">
+      <attributes>
+        <id name="address_id" type="numeric" increment="auto"/>
+        <attr name="building_id" type="numeric"/>
+        <attr name="room" type="char"  length="255"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>building_id, room</order>
+    </table>
+
+    <table name="client" table="client">
+      <attributes>
+        <id name="client_id" type="numeric" increment="auto"/>
+        <attr name="address_id" type="numeric"/>
+        <attr name="dealer_id" type="numeric"/>
+        <attr name="name" type="char"  length="150" title="Имя"/>
+        <attr name="nick" type="char"  length="50" title="Псевдоним"/>
+        <attr name="firmname" type="char"  length="150" title="Фирма"/>
+        <attr name="inn" type="char"  length="150" title="ИНН"/>
+        <attr name="is_removed" type="boolean"/>
+        <attr name="can_chat" type="boolean"/>
+        <attr name="is_firm" type="boolean" title="Юр.лицо"/>
+        <attr name="telefon" type="char"  length="100"/>
+        <attr name="email" type="char"  length="100"/>
+        <attr name="reg_date"  type="date"/>
+        <attr name="new_contract_date"  type="date"/>
+        <attr name="is_balance_correct"  type="boolean"/>
+        <attr name="is_active"  type="boolean"/>
+        <attr name="can_deactivate" type="boolean"/>
+        <attr name="deactivation_type" type="numeric"/>
+        <attr name="activation_time" type="datetime"/>
+        <attr name="activation_done" type="datetime"/>
+
+
+        <attr name="payed_to_date" type="date"/>
+
+        <attr name="new_balance_method" type="boolean"/>
+
+        <attr name="balance_to_alert" type="numeric"/>
+        <attr name="balance_alerted_time" type="datetime"/>
+        <attr name="balance_to_off" type="numeric"/>
+        <attr name="alert_email" type="char"/>
+
+        <attr name="unpayed_days_to_alert" type="numeric"/>
+        <attr name="unpayed_days_alerted_time" type="datetime"/>
+        <attr name="unpayed_days_to_off" type="numeric"/>
+
+        <attr name="credit_balance" type="numeric"/>
+        <attr name="credit_summ" type="numeric"/>
+        <attr name="credit_days" type="numeric"/>
+        <attr name="credit_timestamp" type="datetime"/>
+        <attr name="credit_manager_id" type="numeric"/>
+
+        <attr name="balance" type="numeric"/>
+        <attr name="last_positive_balance_time" type="datetime"/>
+        <attr name="balance_changed"  type="datetime"/>
+        <attr name="minimal_balance"  type="numeric"/>
+        <attr name="start_balance"  type="numeric"/>
+        <attr name="old_balance"  type="numeric"/>
+        <attr name="bill_delivery_id"  type="numeric"/>
+        <attr name="payment_method_id"  type="numeric"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>reg_date</order>
+    </table>
+
+    <table name="dealer" table="dealer">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="address_id" type="numeric"/>
+        <attr name="dealer_id" type="numeric"/>
+        <attr name="firmname" type="char"  length="150" title="Фирма"/>
+        <attr name="inn" type="char"  length="150" title="ИНН"/>
+        <attr name="is_removed" type="boolean"/>
+        <attr name="is_firm" type="boolean" title="Юр.лицо"/>
+        <attr name="telefon" type="char"  length="100"/>
+        <attr name="email" type="char"  length="100"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>reg_date</order>
+    </table>
+
+    <table name="tariff" table="tariff">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="service_id"  type="numeric"/>
+        <attr name="name"  type="char" length="200" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="is_hidden"  type="boolean"/>
+        <attr name="is_active"  type="boolean"/>
+
+        <attr name="price" type="numeric"/>
+
+        <attr name="traffic_mb0" type="numeric"/>
+        <attr name="traffic_mb1" type="numeric"/>
+        <attr name="traffic_mb2" type="numeric"/>
+        <attr name="traffic_mb3" type="numeric"/>
+        <attr name="traffic_mb4" type="numeric"/>
+        <attr name="traffic_mb5" type="numeric"/>
+        <attr name="traffic_mb6" type="numeric"/>
+        <attr name="traffic_mb7" type="numeric"/>
+        <attr name="traffic_mb8" type="numeric"/>
+        <attr name="traffic_mb9" type="numeric"/>
+
+        <attr name="price_mb0" type="numeric"/>
+        <attr name="price_mb1" type="numeric"/>
+        <attr name="price_mb2" type="numeric"/>
+        <attr name="price_mb3" type="numeric"/>
+        <attr name="price_mb4" type="numeric"/>
+        <attr name="price_mb5" type="numeric"/>
+        <attr name="price_mb6" type="numeric"/>
+        <attr name="price_mb7" type="numeric"/>
+        <attr name="price_mb8" type="numeric"/>
+        <attr name="price_mb9" type="numeric"/>
+
+
+        <!--
+        0 - интернет траффик
+        1 - локальный
+        2 - городской
+        3 - почта (mail.orionet.ru)
+        4 - интернет ночной
+        -->
+
+        <serializer name="serialized" type="serializer">
+          <attr name="season_price" type="numeric"/>
+          <attr name="season_mb" type="numeric"/>
+          <attr name="mb_price" type="numeric"/>
+          <attr name="mail_price" type="numeric"/>
+          <attr name="local_mb_price" type="numeric"/>
+        </serializer>
+      </attributes>
+      <order>id</order>
+    </table>
+
+    <table name="message_log" table="message_log">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="client_id"  type="numeric" />
+        <attr name="datetime"  type="datetime"/>
+        <attr name="message_type" type="numeric"/>
+        <attr name="template"  type="char" length="250"/>
+        <attr name="data"  type="char"/>
+      </attributes>
+      <order>id</order>
+    </table>
+
+    <table name="acces_mode" table="acces_mode">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="janitor_id"  type="numeric" />
+        <attr name="type"  type="char" length="20"/>
+        <attr name="name"  type="char" length="20"/>
+        <attr name="comment"  type="char" length="255" />
+        <attr name="rules" type="serializer"/>
+      </attributes>
+      <order>id</order>
+    </table>
+
+    <table name="tariff_log" table="tariff_log">
+      <attributes>
+        <attr name="tariff_id" type="numeric"/>
+        <attr name="service_id" type="numeric"/>
+        <attr name="client_id"  type="numeric"/>
+        <attr name="from_ym"  type="date"/>
+        <attr name="changetime"  type="timestamp"/>
+        <attr name="donetime"  type="datetime"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>from_ym</order>
+    </table>
+
+    <table name="activation_log" table="activation_log">
+      <attributes>
+        <attr name="service_id" type="numeric"/>
+        <attr name="client_id"  type="numeric"/>
+        <attr name="days"  type="numeric"/>
+        <attr name="date"       type="date"/>
+        <attr name="is_active"  type="boolean"/>
+        <attr name="done_time"  type="datetime"/>
+        <attr name="type"  type="numeric"/>
+        <attr name="comment"    type="char" length="255" />
+      </attributes>
+      <order>client_id</order>
+    </table>
+
+    <table name="service" table="service">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="100" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="module"  type="char" length="100"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="janitor" table="janitor">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="100" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="module"  type="char" length="100"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="collector" table="collector">
+      <attributes>
+        <id name="collector_id" type="numeric" increment="auto"/>
+        <attr name="service_id"  type="numeric"/>
+        <attr name="name" type="char" length="100" />
+        <attr name="comment" type="char" length="255" />
+        <attr name="module" type="char" length="100"/>
+        <attr name="work_dir" type="char" length="200"/>
+        <attr name="command_line" type="char" length="200"/>
+        <attr name="traflog_line" type="char" length="200"/>
+        <attr name="arc_dir"  type="char" length="200"/>
+        <attr name="ext"  type="char" length="80"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="router" table="router">
+      <attributes>
+        <id name="router_id" type="numeric" increment="auto"/>
+        <attr name="ip"  type="ip"/>
+        <attr name="mac" type="char" length="80"/>
+        <attr name="real_ip"  type="ip"/>
+        <attr name="am_lasttime"  type="datetime"/>
+        <attr name="hostname"  type="char" length="100" />
+        <attr name="shortname"  type="char" length="100" />
+        <attr name="comment"  type="char" length="255" />
+        <attr name="firstwork_time"  type="datetime"/>
+        <attr name="lastwork_time"  type="datetime"/>
+        <attr name="is_active" type="boolean"/>
+        <attr name="address_id"  type="numeric"/>
+        <attr name="use_janitor"  type="boolean"/>
+        <attr name="altitude" type="numeric"/>
+        <attr name="login" type="char"/>
+        <attr name="client_ip_min" type="ip"/>
+        <attr name="client_ip_max" type="ip"/>
+        <attr name="default_janitor_id"  type="numeric"/>
+      </attributes>
+      <order>router_id</order>
+    </table>
+
+    <table name="router_collector" table="router_collector">
+      <attributes>
+        <attr name="router_id" type="numeric"/>
+        <attr name="collector_id"  type="numeric"/>
+        <attr name="is_active"  type="boolean"/>
+        <attr name="command_line"  type="char" length="255"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+    </table>
+
+    <table name="router_ip" table="router_ip">
+      <attributes>
+        <attr name="router_id"   type="numeric"/>
+        <attr name="mask"   type="numeric"/>
+        <attr name="bits" type="numeric"/>
+        <attr name="type" type="char" length="20"/>
+        <attr name="comment"  type="char" length="255" />
+      </attributes>
+      <order>mask desc</order>
+    </table>
+
+    <table name="host" table="host">
+      <attributes>
+        <id name="host_id" type="numeric" increment="auto"/>
+        <attr name="ip" type="numeric"/>
+        <attr name="am_name"  type="char" length="20"/>
+        <attr name="am_type"  type="char" length="20"/>
+        <attr name="am_time"  type="datetime"/>
+        <attr name="mac"   type="char" length="80"/>
+        <attr name="bits"  type="numeric"/>
+        <attr name="is_vpn" type="boolean"/>
+        <attr name="password" type="char"/>
+        <attr name="hostname"  type="char" length="100"/>
+        <attr name="address_id"  type="numeric"/>
+        <attr name="is_removed"  type="boolean"/>
+        <attr name="is_active"  type="boolean"/>
+        <attr name="manager_id"  type="numeric"/>
+        <attr name="router_id"  type="numeric"/>
+        <attr name="janitor_id"  type="numeric"/>
+        <attr name="createtime"  type="timestamp"/>
+        <attr name="modifytime"  type="timestamp"/>
+        <attr name="firstwork_time"  type="datetime"/>
+        <attr name="lastwork_time"  type="datetime"/>
+        <attr name="client_id"  type="numeric"/>
+      </attributes>
+      <order>ip</order>
+    </table>
+
+    <table name="access_mode" table="access_mode">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="janitor_id"  type="numeric"/>
+        <attr name="type" type="char"/>
+        <attr name="name" type="char"/>
+        <attr name="comment" type="char" length="255"/>
+        <attr name="rules"  type="serializer"/>
+      </attributes>
+    </table>
+
+    <table name="host_attach_log" table="host_attach_log">
+      <attributes>
+        <attr name="from_ym"  type="date"/>
+        <attr name="to_ym"  type="date"/>
+        <attr name="attach_done_time" type="datetime"/>
+        <attr name="deattach_done_time" type="datetime"/>
+        <attr name="client_id"  type="numeric"/>
+        <attr name="host_id" type="numeric"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+    </table>
+
+    <table name="host_log" table="host_log">
+      <attributes>
+        <attr name="timestamp"  type="timestamp"/>
+        <attr name="host_id" type="numeric"/>
+        <attr name="text" type="char"/>
+      </attributes>
+    </table>
+
+    <table name="payment_method" table="payment_method">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255"/>
+        <attr name="templ" type="char" length="100"/>
+        <attr name="tax"  type="numeric"/>
+        <attr name="is_default" type="boolean"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+    </table>
+
+    <table name="payment" table="payment">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="client_id"  type="numeric"/>
+        <attr name="invoice_id"  type="numeric"/>
+        <attr name="date"  type="date"/>
+        <attr name="summa"  type="numeric"/>
+        <attr name="balance"  type="numeric"/>
+        <attr name="payment_method_id"  type="numeric"/>
+        <attr name="type"  type="numeric"/>
+        <attr name="timestamp"  type="timestamp"/>
+        <attr name="manager_id"  type="numeric"/>
+        <attr name="summa_order"  type="numeric"/>
+        <attr name="comment"  type="char" length="255"/>
+        <attr name="secret_comment"  type="char" length="255"/>
+      </attributes>
+      <order>date desc, timestamp desc</order>
+    </table>
+
+    <table name="payment_log" table="payment_log">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+
+        <attr name="payment_id"  type="numeric"/>
+        <attr name="timestamp"  type="timestamp"/>
+        <attr name="manager_id"  type="numeric"/>
+
+        <attr name="client_id"  type="numeric"/>
+        <attr name="date"  type="date"/>
+        <attr name="summa"  type="numeric"/>
+        <attr name="summa_order"  type="numeric"/>
+        <attr name="payment_method_id"  type="numeric"/>
+        <attr name="type"  type="numeric"/>
+        <attr name="comment"  type="char" length="255"/>
+
+        <attr name="new_client_id"  type="numeric"/>
+        <attr name="new_date"  type="date"/>
+        <attr name="new_summa"  type="numeric"/>
+        <attr name="new_summa_order"  type="numeric"/>
+        <attr name="new_payment_method_id"  type="numeric"/>
+        <attr name="new_type"  type="numeric"/>
+        <attr name="new_comment"  type="char" length="255"/>
+
+
+        <attr name="modify_comment"  type="char" length="255"/>
+      </attributes>
+      <order>timestamp</order>
+    </table>
+
+    <table name="period" table="period">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="create_time" type="datetime"/>
+        <attr name="is_closed" type="boolean"/>
+        <attr name="service_id" type="numeric"/>
+        <attr name="start" type="date"/>
+        <attr name="end" type="date"/>
+        <attr name="comment"  type="char" length="255"/>
+        <attr name="dayshot_id" type="numeric"/>
+        <attr name="season_date"  type="date"/>
+      </attributes>
+      <order>end</order>
+    </table>
+
+    <table name="charge" table="charge">
+      <attributes>
+        <attr name="charge_time" type="datetime"/>
+        <attr name="period_id" type="numeric"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="tariff_id" type="numeric"/>
+        <attr name="summa" type="numeric"/>
+
+        <attr name="total_days" type="numeric"/>
+        <attr name="act_log" type="boollog"/>
+      </attributes>
+      <order>period_id asc</order>
+    </table>
+
+    <table name="charge:iptraff" table="charge">
+      <attributes>
+        <attr name="charge_time" type="datetime"/>
+        <attr name="period_id" type="numeric"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="tariff_id" type="numeric"/>
+        <attr name="is_correct" type="boolean"/>
+
+        <attr name="total_days" type="numeric"/>
+        <attr name="act_log" type="boollog"/>
+
+        <attr name="summa" type="numeric"/>
+        <attr name="summa_order" type="numeric"/>
+
+
+        <attr name="other_summa" type="numeric"/>
+        <attr name="other_summa_order" type="numeric"/>
+
+        <attr name="iptraff_summa" type="numeric"/>
+        <attr name="iptraff_summa_order" type="numeric"/>
+
+
+        <attr name="traffic_summa" type="numeric"/>
+        <attr name="traffic_order" type="numeric"/>
+        <attr name="traffic_free" type="numeric"/>
+        <attr name="season_order" type="numeric"/>
+        <attr name="season_days" type="numeric"/>
+        <attr name="traffic" type="serializer"/>
+
+      </attributes>
+    </table>
+
+
+
+    <table name="invoice" table="invoice">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="client_id"  type="numeric"/>
+        <attr name="summa"  type="numeric"/>
+        <attr name="date"  type="date"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+      <order>date</order>
+    </table>
+
+
+    <table name="log_shot" table="log_shot">
+      <attributes>
+        <id name="shot_id" type="numeric" increment="auto"/>
+        <attr name="router_id" type="numeric"/>
+        <attr name="collector_id" type="numeric"/>
+        <attr name="is_removed" type="boolean"/>
+        <attr name="iface" type="char" length="10"/>
+        <attr name="filetime" type="datetime"/>
+        <attr name="filename" type="char" length="100"/>
+        <attr name="shottime" type="datetime"/>
+        <attr name="minlogtime" type="datetime"/>
+        <attr name="maxlogtime" type="datetime"/>
+        <attr name="count_max" type="numeric"/>
+        <attr name="count_min" type="numeric"/>
+        <attr name="bytes" type="numeric"/>
+      </attributes>
+      <order>filetime</order> <!-- TODO убрать limit в table  -->
+    </table>
+
+    <table name="minut_shot" table="minut_shot">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="shottime" type="timestamp"/>
+        <attr name="dto" type="date"/>
+        <attr name="dfrom" type="date"/>
+        <attr name="from_ushot_id" type="numeric"/>
+        <attr name="to_ushot_id" type="numeric"/>
+        <attr name="bytes" type="numeric"/>
+        <attr name="lost_bytes" type="numeric"/>
+      </attributes>
+      <order>shottime</order>
+    </table>
+
+    <table name="minut_traffic" table="minut_traffic">
+      <attributes>
+        <attr name="date" type="date"/>
+        <attr name="time" type="time"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="datetime" type="datetime"/>
+        <attr name="ip" type="char" length="16"/>
+        <attr name="dip" type="char" length="16"/>
+        <attr name="class" type="numeric"/>
+        <attr name="bytes" type="numeric"/>
+        <attr name="direction" type="char" length="3"/>
+      </attributes>
+    </table>
+
+    <table name="day_shot" table="day_shot">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="shottime" type="numeric"/>
+        <attr name="dto" type="date"/>
+        <attr name="dfrom" type="date"/>
+        <attr name="from_mshot_id" type="numeric"/>
+        <attr name="to_mshot_id" type="numeric"/>
+        <attr name="bytes" type="numeric"/>
+        <attr name="lost_bytes" type="numeric"/>
+      </attributes>
+      <order>shottime</order>
+    </table>
+
+    <table name="day_traffic" table="day_traffic">
+      <attributes>
+        <attr name="ip" type="ip"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="date" type="date"/>
+        <attr name="bytes" type="char" length="16"/>
+        <attr name="class" type="numeric"/>
+      </attributes>
+    </table>
+
+<!--
+    <table name="router_traffic" table="router_traffic">
+      <attributes>
+        <attr name="router_id" type="numeric"/>
+        <attr name="date" type="date"/>
+        <attr name="bytes" type="char" length="16"/>
+        <attr name="class" type="numeric"/>
+      </attributes>
+    </table> -->
+
+
+    <table name="prov_router" table="prov_router">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name" type="char"/>
+        <attr name="ip" type="ip"/>
+        <attr name="is_checked" type="boolean"/>
+        <attr name="lasttime" type="timestamp"/>
+      </attributes>
+    </table>
+
+    <table name="prov_day_traffic" table="prov_day_traffic">
+      <attributes>
+        <attr name="prov_router_id" type="numeric"/>
+        <attr name="date" type="date"/>
+        <attr name="bytes" type="char" length="16"/>
+        <attr name="class" type="numeric"/>
+      </attributes>
+    </table>
+
+
+    <table name="requests_log" table="requests_log">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="address_id" type="numeric"/>
+        <attr name="manager_id" type="numeric"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="createtime" type="datetime"/>
+        <attr name="contact_name" type="char" length="255"/>
+        <attr name="contact_phone" type="char" length="255"/>
+        <attr name="contact_email" type="char" length="255"/>
+        <attr name="comment"  type="char" length="255"/>
+        <attr name="fault_text"  type="char" length="255"/>
+        <attr name="approx_date" type="date"/>
+        <attr name="approx_time" type="time"/>
+        <attr name="fix_time" type="datetime"/>
+      </attributes>
+      <order>createtime</order>
+    </table>
+
+    <table name="demand_source" table="demand_source">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255"/>
+        <attr name="is_default"  type="boolean"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="demand_resolution" table="demand_resolution">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255"/>
+        <attr name="is_default"  type="boolean"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="demand_problem_type" table="demand_problem_type">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="name"  type="char" length="255"/>
+        <attr name="is_default"  type="boolean"/>
+        <attr name="comment"  type="char" length="255"/>
+      </attributes>
+      <order>name</order>
+    </table>
+
+    <table name="demand_log" table="demand_log">
+      <attributes>
+        <id name="id" type="numeric" increment="auto"/>
+        <attr name="createtime" type="datetime"/>
+        <attr name="fix_timestamp" type="datetime"/>
+        <attr name="manager_id" type="numeric"/>
+        <attr name="respons_manager_id" type="numeric"/>
+        <attr name="client_id" type="numeric"/>
+        <attr name="source_id" type="numeric"/>
+        <attr name="problem_id" type="numeric"/>
+        <attr name="resolution_id" type="numeric"/>
+        <attr name="is_serious"  type="boolean"/>
+        <attr name="demand"  type="char"/>
+        <attr name="comment"  type="char" length="255"/>
+        <attr name="clients_opinion"  type="char" length="255"/>
+        <attr name="problem_from_date" type="date"/>
+      </attributes>
+      <order>createtime</order>
+    </table>
+
+
+
+  </tables>
+</xml>

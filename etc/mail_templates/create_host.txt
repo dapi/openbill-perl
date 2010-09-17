@@ -1,0 +1,14 @@
+[% INCLUDE header.txt %]
+Subject: Новый host: $host.host на $host.address
+
+Создан новый host ($host.host_id).
+
+IP:       $host.host
+hostname: $host.hostname
+MAC:      $host.mac
+Адрес:    $host.address
+Роутер:   $host.router
+[% IF host.comment %]Комментарий: $host.comment[% END %]
+
+
+[% INCLUDE footer.txt %]

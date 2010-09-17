@@ -1,0 +1,28 @@
+[% INCLUDE header.txt %]
+Subject: Модифицирован роутер: $old.hostname по адресу $old.address
+
+Модифицирован роутер: $old.hostname
+
+
+----------------------------------------
+БЫЛО:
+
+hostname: $old.hostname
+MAC:      $old.mac
+IP:       $old.ip
+Адрес:    $old.address
+[% IF old.altitude %]Высота: $old.altitude м.[% END %]
+[% IF old.comment %]Комментарий: $old.comment[% END %]
+
+----------------------------------------
+СТАЛО:
+
+hostname: $new.hostname
+MAC:      $new.mac
+IP:       $new.ip
+Адрес:    $new.address
+[% IF new.altitude %]Высота: $new.altitude м.[% END %]
+[% IF new.comment %]Комментарий: $new.comment[% END %]
+
+
+[% INCLUDE footer.txt %]

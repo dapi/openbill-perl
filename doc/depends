@@ -1,0 +1,27 @@
+obs.pl:
+
+p5-SOAP-Lite
+dpl/System.pm
+	/usr/local/lib/perl5/site_perl/5.8.8/dpl
+openbill/Shell.pm
+	/usr/local/lib/perl5/site_perl/5.8.8/openbill
+p5-Date-Handler
+p5-Log-Log4perl	
+p5-Error
+p5-XML-LibXSLT
+p5-TimeDate
+p5-Number-Format
+p5-Text-Iconv
+p5-DBI 1.60.4
+p5-Data-Serializer
+p5-Text-Shellwords
+p5-ReadLine-Gnu
+p5-Text-FormatTable
+p5-Email-Valid
+p5-LockFile-Simple
+
+
+
+
+
+

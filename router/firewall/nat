@@ -1,0 +1,18 @@
+IP=$1
+# Setup masquerade
+
+# Прямая маршрутизация на колокейшин
+$fw -t nat -A POSTROUTING -d ${WWW} -o ${REAL_INT} -j ACCEPT
+
+# Прямая маршрутизация сеть Орионет
+$fw -t nat -A POSTROUTING -d ${INTRANET} -o ${REAL_INT} -j ACCEPT
+
+# Для всего остального маскарадинг
+$fw -t nat -A POSTROUTING -o ${REAL_INT} -j SNAT --to $IP
+
+# redirect to localhost
+
+#$fw -t nat -I PREROUTING -p tcp -d 217.107.177.162 -s ${WWW} --dport 80 -j DNAT --to-destination 10.100.2.10
+#$fw -t nat -I PREROUTING -p tcp -d 217.107.177.162 -s 10.100.0.0/16 --dport 80 -j DNAT --to-destination 10.100.2.10
+#$fw -t nat -I PREROUTING -p tcp -d 217.107.177.162 -s 10.100.0.0/16 --dport 9192 -j DNAT --to-destination 10.100.2.10
+#$fw -t nat -I PREROUTING -p tcp -d 217.107.177.162 -s 10.100.0.0/16 --dport 8080 -j DNAT --to-destination 10.100.2.10

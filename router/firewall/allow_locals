@@ -1,0 +1,5 @@
+#echo "Allow locals $IP"
+for ip in $*; do
+   $fw -A INPUT  -i $LO_INT -s $ip  -j ACCEPT
+   $fw -A OUTPUT -o $LO_INT -d $ip  -j ACCEPT
+done

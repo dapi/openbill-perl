@@ -1,0 +1,11 @@
+***
+system->login({login=>'????',password=>'?????',soft=>'название клиентского ПО',version=>'версия клиентского ПО'});
+
+результат:
+
+{version=>версия openbill,
+soft=>'openbill',
+session=>session ID,
+access=>hashref с объектами и фнукциями, который позволяется запускать этому пользователю,
+manager=>имя менеджера
+}

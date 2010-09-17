@@ -1,0 +1,146 @@
+package openbill::Service;
+use strict;
+use openbill::Host;
+use openbill::Base;
+use openbill::Tariff;
+use openbill::System;
+use openbill::Client;
+use openbill::Utils;
+use dpl::Error;
+use dpl::Log;
+use dpl::Context;
+use dpl::Db::Table;
+use dpl::Db::Database;
+use dpl::Db::Filter;
+use Exporter;
+use Error qw(:try);
+use vars qw(@ISA
+            @EXPORT);
+
+@ISA=qw(Exporter
+        openbill::Base);
+
+@EXPORT=qw(service);
+
+sub service {
+  return openbill::Service->instance('service',@_);
+}
+
+sub DataFull {
+  my ($self,$key) = @_;
+  $self->Load() unless $self->isLoaded();
+  unless (exists $self->{data}->{module_desc}) {
+    my $module = $self->Data('module');
+    $self->{data}->{module_desc} ||=openbill::System::GetModules('service')->{$module}->{desc};
+  }
+
+  return $key ? $self->{data}->{$key} : $self->{data};
+}
+
+
+sub chargetable {
+  my $self = shift;
+  fatal("Не определён chargetable") if $self->isLoaded();
+  $self->Load();
+  # Так как модуль загужен, то вызовется не эта функция
+  return $self->chargetable();
+}
+
+sub string {
+  my $self = shift;
+  return $self->Data('name');
+}
+
+sub GetName {
+  my $self = shift;
+  return $self->Data('name');
+}
+
+sub Create  {
+  my ($self,$data) = @_;
+  $self->checkParams($data,'name');
+  my $res=$self->SUPER::Create($data);
+  return undef unless $res;
+
+  my $module = $self->Data('module');
+  return $module eq ref($self) ? $self :
+    $self->changeClass(openbill::System::GetModules('service')->{$module}->{file},$module);
+}
+
+sub Tariffes {
+  my $self = shift;
+  return openbill::Tariff::tariff()->List($self);
+}
+
+
+sub init {
+  my ($self) = @_;
+  return $self unless $self->isLoaded();
+  my $module = $self->Data('module');
+  return $self if !$module || $module eq ref($self);
+  my $self = $self->changeClass(openbill::System::GetModules('service')->{$module}->{file},$module);
+  return $self->init();
+}
+
+sub List {
+  my ($self,$module) = @_;
+  my @services;
+  my $list = table('service')->List();
+  foreach (@$list) {
+    next if $module && $module ne $_->{module};
+    push @services, service($_->{id},$_);
+  }
+  return wantarray ? @services : \@services;
+}
+
+sub GetUnit {
+  die 'not implemented. Must be implemented in childs';
+}
+
+sub charge {                    #  Генерировать charge-records, сбрасывать все данные оп периоду и устанавливать необходимые данные по сервису
+  my ($self,$period) = @_;
+  logger()->debug("Считаю период ".$period->string());
+  my $summa = 0;
+  $self->SetNewPeriodStatus($period);
+  my $clients = $self->GetNewTraffic($period) || return undef;
+  foreach my $cid (sort keys %$clients) {
+    my $client = openbill::Client::client($cid);
+    #    print "cid:$cid," if setting('terminal');
+
+    # TODO Откуда появляются клиенты (49-й к примеру). Активированные,
+    # но без charge, в результате выдаёт "ERROR: ID для tariff не
+    # определён"
+
+    $summa+=$client->MakeCharge($period,$clients->{$cid});
+  }
+  return $summa;
+}
+
+sub newCharge {
+  my ($self,$period) = @_;
+  logger()->debug("Пересчитываю период ".$period->string());
+  $self->SetNewPeriodStatus($period,1);
+  my $clients_traffic = $self->GetNewTraffic($period);
+  my $clients_tariffes = $period->CreateTariffesCache($self);
+  my $clients_activations = $period->CreateActivationsCache($self);
+  logger()->warn("Нового трафика нет") unless $clients_traffic;
+  my $summa = 0;
+  foreach my $cid (sort keys %$clients_tariffes) {
+    print "." if setting('terminal');
+    my $client = openbill::Client::client($cid);
+    $summa+=$client->MakeCharge($period,$clients_traffic->{$cid},2);
+    delete $clients_activations->{$cid};
+    delete $clients_traffic->{$cid};
+  }
+  if (%$clients_activations) {
+    fatal("Существует активация для клиентов: ".join(',',keys %$clients_activations).' в то время как тарифы не установлены');
+  }
+  if (%$clients_traffic) {
+    fatal("Существует трафик для клиентов: ".join(',',keys %$clients_traffic).' в то время как тарифы не установлены');
+  }
+  return $summa;
+}
+
+sub Delete { die 'not implemented'; }
+
+1;

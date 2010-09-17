@@ -1,0 +1,25 @@
+
+$fw -P INPUT   $DENY
+$fw -P OUTPUT  $DENY
+$fw -P FORWARD $DENY
+
+#. $fwp/block_nets
+
+. $fwp/deny_bad_input $REAL_INT
+
+. $fwp/ulog
+
+. $fwp/forward
+
+. $fwp/allow_locals $REAL_IP $LOCAL_IP localhost
+
+. $fwp/default $LOCAL_IP $REAL_INT
+. $fwp/default $REAL_IP $REAL_INT local
+. $fwp/default $LOCAL_IP $LOCAL_INT local
+. $fwp/default $REAL_IP $LOCAL_INT local
+
+. $fwp/users
+
+. $fwp/nat $REAL_IP
+
+. $fwp/deny_other

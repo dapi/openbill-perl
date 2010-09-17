@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+iface=`cat /etc/orionet/iface_external`
+while /bin/true; do
+clear
+cat /proc/driver/aironet/$iface/Status
+sleep 1
+clear
+done

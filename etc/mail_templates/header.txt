@@ -1,0 +1,2 @@
+To: $email[% IF name %] ($name)[% END %]
+From: client@orionet.ru (Абонентский отдел ORIONET)

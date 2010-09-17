@@ -1,0 +1,50 @@
+СС - сервер статистики
+
+ulog-acctd собирает статистику в account.log. При запросе с СС
+локально на бридже выполняется скрипт.
+
+
+Скрипт даёт сигнал HUP /service/ulog-acctd (trap "/.." SIGHUP)
+
+/service/ulog-acctd после вращения лога создаёт файл .done
+затем добавляет в архив все файлы в каталоге /arc/
+
+скрипт ждёт 10 секунд файл .done
+
+и в любом случае передаёт все файлы из каталога /log/*
+
+/service/ulog-acctd сам периодически вращает журнал (раз в полчаса)
+
+
+DIR='var/log/ulog-acctd/';
+LOG_DIR='$DIR/log/'
+ARC_DIR='$DIR/archive/'
+ACCOUNT='$DIR/account.log'
+
+hostname=`hostname`; date=`date +"%Y-%m-%d-%H:%M"`
+LOG="$LOG_DIR$hostname-$date.log"
+
+
+if [ -f $LOG ]; then
+  echo "Here is already such log-file $LOG. Try other minut to log-file name be changed."
+  exit 1
+fi
+
+killall -TSTP ulog-acctd
+mv $ACCOUNT $LOG
+killall -CONT ulog-acctd
+
+cd $LOG_DIR
+
+files=`ls -1`
+
+if [ "$files" ]; then
+   echo -n "Files to send: '$files'"  >&2
+   if tar cf - $files; then
+     mv $files $ARC_DIR || echo "Can't move log" >&2
+   else
+     echo "Tar errorcode $?. Can't send files" >&2
+   fi
+else
+   echo "No files to send"  >&2
+fi

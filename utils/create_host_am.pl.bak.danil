@@ -1,0 +1,540 @@
+#!/usr/bin/perl
+use lib qw(/home/danil/projects/openbill/
+           /home/danil/projects/dpl/);
+use dpl::XML;
+use dpl::Error;
+use dpl::Db::Database;
+use dpl::Db::Table;
+use dpl::Db::Filter;
+use Date::Language;
+use Date::Parse;
+use strict;
+use openbill::System;
+use openbill::AccessMode;
+
+$ENV{OPENBILL_ROOT}||='/usr/local/openbill/';
+my $config = $ENV{OPENBILL_CONFIG} || "$ENV{OPENBILL_ROOT}etc/system.xml";
+
+dpl::System::Define('openbill',$config);
+dpl::Context::Init('openbill');
+
+my $db = db();
+$db->Connect();
+
+table('access_mode')->Delete({});
+
+my $a = access_mode();
+
+$a->Create({id=>2,
+            name=>'active',
+            type=>'common',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -A USER_FORWARD -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -d $IP -j $USER_FORWARD_ACCEPT'
+                   ]
+           });
+$a->Create({id=>3,
+            name=>'deactive',
+            type=>'common',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -s 10.100.2.0/255.255.255.0 -d 192.168.1.0/24 -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -s $IP -m mac --mac-source $MAC   -d 10.100.2.0/255.255.255.0 -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+$a->Create({id=>4,
+            name=>'active',
+            type=>'mail',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16  -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -d $WWW -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -d 217.107.177.199 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -s 217.107.177.199 -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+ #                   '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+$a->Create({id=>5,
+            name=>'deactive',
+            type=>'mail',
+            janitor_id=>1,
+            rules=>[]
+           });
+$a->Create({id=>6,
+            name=>'active',
+            type=>'megafon',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -d 195.128.154.133   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -s 195.128.154.133  -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+$a->Create({id=>7,
+            name=>'deactive',
+            type=>'megafon',
+            janitor_id=>1,
+            rules=>[]
+           });
+
+$a->Create({id=>8,
+            name=>'active',
+            type=>'restricted',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 443 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 443 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+$a->Create({id=>9,
+            name=>'deactive',
+            type=>'restricted',
+            janitor_id=>1,
+            rules=>[]
+           });
+
+$a->Create({id=>10,
+            name=>'active',
+            type=>'wifi',
+            janitor_id=>1,
+            # 5190 - ICQ login.icq.com
+	# 1863 - MSN
+# 1001,1002,2020,2022 - forex
+            rules=>[
+		    '$fw -A USER_FORWARD -s $IP -d 213.59.74.242 -j ACCEPT', #VPN
+		    '$fw -A USER_FORWARD -d $IP -s 213.59.74.242 -j ACCEPT', #VPN
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -t nat -A PREROUTING -s $IP -d ! $WWW -i $LOCAL_INT -p tcp --dport 80 -j DNAT --to $WWW:27567',
+
+                    '$fw -A USER_FORWARD -p icmp -s $IP -d $WWW -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p icmp -d $IP -s $WWW -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 2022 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 2022 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 2020 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 2020 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 1001 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 1001 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 1005 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 1005 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 1002 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 1002 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 1863 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 1863 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 5190 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5190 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --dport 80 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --destination-port 27567 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 27567 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.8.1  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.8.1 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --destination-port 25 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 25 -d $IP -j $USER_FORWARD_ACCEPT',
+
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+$a->Create({id=>11,
+            name=>'deactive',
+            type=>'wifi',
+            janitor_id=>1,
+            rules=>[]
+           });
+
+$a->Create({id=>12,
+            name=>'active',
+            type=>'netping',
+            janitor_id=>1,
+            rules=>[
+
+                    '$fw -A USER_FORWARD -p icmp -s $IP -d $WWW -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p icmp -d $IP -s $WWW -j $USER_FORWARD_ACCEPT',
+
+                   ]
+           });
+$a->Create({id=>13,
+            name=>'deactive',
+            type=>'netping',
+            janitor_id=>1,
+            rules=>[]
+           });
+
+
+$a->Create({id=>14,
+            name=>'active',
+            type=>'kazanfond',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    # Special deny
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 8090 -d 62.105.142.58 -s $IP -m mac --mac-source $MAC -j DROP',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 8090 -s 62.105.142.58 -d $IP -j DROP',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 8090 -s $IP -m mac --mac-source $MAC -j DROP',
+                    '$fw -A USER_FORWARD -p tcp --source-port 8090 -d $IP -j DROP',
+                    '$fw -A USER_FORWARD -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -d $IP -j $USER_FORWARD_ACCEPT'
+                   ]
+           });
+$a->Create({id=>15,
+            name=>'deactive',
+            type=>'kazanfond',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+
+                   ]
+
+           });
+
+### NetBSD ipfilter É ipnat
+### Added By DiMA ###
+
+$a->Create({id=>16,
+            name=>'active',
+            type=>'common',
+            janitor_id=>2,
+            rules=>[
+		    #simple routing to colocation
+		    'ipf: pass in quick on $if_ext fastroute proto tcp from any to 217.107.177.196',
+		    'ipf: pass in quick on $if_ext fastroute proto udp from any to 217.107.177.196',
+		    #allow ftp
+		    'ipnat: map $if_ext $ip/32 -> $if_ext/32 proxy port ftp ftp/tcp',
+		    #changing source port to random port in range 40000-65000
+                    'ipnat: map $if_ext $ip/32 -> $if_ext/32 portmap tcp/udp 40000:65000',
+		    #NATing all other
+		    'ipnat: map $if_ext $ip/32 -> $if_ext/32'
+                   ]
+           });
+$a->Create({id=>17,
+            name=>'deactive',
+            type=>'common',
+            janitor_id=>2,
+            rules=>[
+		    #simple routing to colocation
+		    #tcp & udp DNS
+		    'ipf: pass in quick on $if_ext fastroute proto tcp from any to 217.107.177.196 port = 53',
+		    'ipf: pass in quick on $if_ext fastroute proto udp from any to 217.107.177.196 port = 53',
+		    #http
+		    'ipf: pass in quick on $if_ext fastroute proto tcp from any to 217.107.177.196 port = 80',
+		    #pop3
+		    'ipf: pass in quick on $if_ext fastroute proto tcp from any to 217.107.177.196 port = 110',
+		    #jabber
+		    'ipf: pass in quick on $if_ext fastroute proto tcp from any to 217.107.177.196 port = 5223'
+                   ]
+           });
+###################
+
+$a->Create({id=>18,
+            name=>'active',
+            type=>'mail',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16  -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+ #                   '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW  -d $IP -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW  -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+#                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+
+
+
+
+
+
+
+
+
+
+### VPN
+
+
+$a->Create({id=>19,
+            name=>'active',
+            type=>'vpn_only',
+            janitor_id=>1,
+            rules=>[
+
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16  -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -d 213.59.74.242 --dport 1723 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp -s 213.59.74.242 --sport 1723 -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p 47 -d 213.59.74.242 -s $IP -j ACCEPT',
+                    '$fw -A USER_FORWARD -p 47 -s 213.59.74.242 -d $IP -j ACCEPT',
+                   ]
+           });
+$a->Create({id=>20,
+            name=>'deactive',
+            type=>'vpn_only',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16  -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+
+
+#################
+# RADIUS
+
+$a->Create({id=>21,
+            name=>'active',
+            type=>'common',
+            janitor_id=>3,
+            rules=>[
+                   ]
+           });
+$a->Create({id=>22,
+            name=>'deactive',
+            type=>'common',
+            janitor_id=>3,
+            rules=>[
+                   ]
+           });
+###################
+
+
+$a->Create({id=>23,
+            name=>'active',
+            type=>'admin',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -d $IP -j $USER_FORWARD_ACCEPT'
+                   ]
+           });
+$a->Create({id=>24,
+            name=>'deactive',
+            type=>'admin',
+            janitor_id=>1,
+            rules=>[
+                    '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.0.0/16   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p udp --source-port 53 -s 10.100.0.0/16   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 80 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 110 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 110 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -p tcp --destination-port 25 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -p tcp --source-port 25 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -s 10.100.2.0/255.255.255.0 -d 192.168.1.0/24 -j $USER_FORWARD_ACCEPT',
+                    # '$fw -A USER_FORWARD -s $IP -m mac --mac-source $MAC   -d 10.100.2.0/255.255.255.0 -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC  -j $USER_FORWARD_ACCEPT',
+                    '$fw -A USER_FORWARD -p tcp --source-port 5223 -s $WWW   -d $IP -j $USER_FORWARD_ACCEPT',
+                   ]
+           });
+
+
+
+### FreeBSD ipfw
+
+$a->Create({id=>25,
+            name=>'active',
+            type=>'common',
+            janitor_id=>4,
+            rules=>[
+                    #'allow udp from $ip to me dst-port 53',
+                    #'allow ip from $ip to 217.107.177.196',
+		    #'allow ip from $ip to not me',
+		    'allow ip from $ip to any keep-state',
+		    ]
+           });
+$a->Create({id=>26,
+            name=>'deactive',
+            type=>'common',
+            janitor_id=>4,
+            rules=>[
+                    #'allow udp from $ip to me dst-port 53 MAC any $mac',
+                    'allow ip from $ip to 217.107.177.196 keep-state']
+           });
+
+
+$a->Create({id=>27,
+            name=>'active',
+            type=>'admin',
+            janitor_id=>4,
+            rules=>[
+		    'allow ip from $ip to any keep-state',
+		    'allow ip from any to $ip keep-state',
+                   ]
+           });
+$a->Create({id=>28,
+            name=>'deactive',
+            type=>'admin',
+            janitor_id=>4,
+            rules=>[
+                    'allow ip from $ip to 217.107.177.196 keep-state'
+                   ]
+
+           });
+
+
+$a->Create({id=>29,
+            name=>'active',
+            type=>'netping',
+            janitor_id=>4,
+            rules=>[
+                    'allow icmp from $ip to 217.107.177.196',
+                    'allow icmp from 217.107.177.196 to $ip'
+                   ]
+           });
+$a->Create({id=>30,
+            name=>'deactive',
+            type=>'netping',
+            janitor_id=>4,
+            rules=>['allow icmp from 217.107.177.196 to $ip keep-state']
+           });
+
+
+$a->Create({id=>31,
+            name=>'active',
+            type=>'wifi',
+            janitor_id=>4,
+            # 5190 - ICQ login.icq.com
+	# 1863 - MSN
+# 1001,1002,2020,2022 - forex
+            rules=>[
+                    'allow ip from $ip to 217.107.177.196', # WWW
+                    'allow ip from 217.107.177.196 to $ip', # WWW
+                    'allow ip from $ip to 213.59.74.242', # VPN
+                    'allow ip from 213.59.74.242 to $ip', # VPN
+
+                    'fwd 217.107.177.196,27567 tcp from $ip to any dst-port 80',
+
+                    'allow ip from $ip to any 110 MAC any $mac keep-state',
+                    'allow ip from $ip to any 25 MAC any $mac keep-state',
+#                    'allow ip from $ip to any 1863 MAC any $mac keep-state',
+                    'allow ip from $ip to any 5190 MAC any $mac keep-state', # ICQ
+                    'allow ip from $ip to any 5223 MAC any $mac keep-state', # JABBER
+
+                    # 2022, 2020, 1001, 1005, 1002
+
+                   ]
+           });
+#                     '$fw -A USER_FORWARD -s $IP -p icmp -d ! $WWW -j DROP',
+#                     '$fw -t nat -A PREROUTING -s $IP -d ! $WWW -i $LOCAL_INT -p tcp --dport 80 -j DNAT --to $WWW:27567',
+#
+#                     '$fw -A USER_FORWARD -p tcp --dport 2022 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 2020 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 1001 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 1005 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 1002 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 1863 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 5190 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --dport 80 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --destination-port 27567 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --source-port 27567 -s $WWW -d $IP -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p udp --destination-port 53 -d 10.100.8.1  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --destination-port 80 -d $WWW  -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --destination-port 110 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --destination-port 25 -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+#                     '$fw -A USER_FORWARD -p tcp --destination-port 5223 -d $WWW   -s $IP -m mac --mac-source $MAC -j $USER_FORWARD_ACCEPT',
+
+$a->Create({id=>32,
+            name=>'deactive',
+            type=>'wifi',
+            janitor_id=>4,
+            rules=>[
+                    'allow icmp from $ip to 217.107.177.196',
+                    'allow icmp from 217.107.177.196 to $ip'
+                   ]
+           });
+
+$a->Create({id=>33,
+            name=>'active',
+            type=>'vpn_only',
+            janitor_id=>4,
+            rules=>[
+		    'allow tcp from $ip to me 1723 keep-state',
+                    'allow gre from $ip to me keep-state',
+		    ]
+           });
+$a->Create({id=>34,
+            name=>'deactive',
+            type=>'vpn_only',
+            janitor_id=>4,
+            rules=>[
+                    'allow gre from $ip to me keep-state',
+                    'allow tcp from $ip to me 1723 keep-state'
+                   ]
+           });
+
+
+
+$db->Commit();
+$db->Disconnect();

@@ -1,0 +1,34 @@
+
+   http://www.planet.net.ua/main/product/129.html
+
+   http://itc.ua/img/ko/2003/11/shluz.htm
+
+   http://itc.ua/article.phtml?ID=12952
+
+   http://shs.sumy.ua/cgi-bin/index.cgi
+
+   http://palm.opennet.ru/openforum/vsluhforumID1/10993.html#1
+
+   http://www.isp-wireless.net/pipermail/isp-wireless/2002-October/000083
+   .html
+
+
+
+   Возможно ли сделать NAS на FreeBSD
+   с использованием не POPTOP а MPD?
+   Если всё же POPTOP то как лучше прикрутить к нему PPP: как kernel-mode
+   (pppd) или как user-mode (/usr/sbin/ppp)?
+
+
+
+   Сходи на http://poptop.lineo.com
+   Я делал, если не изменяет память:
+   ./configure --with-bsdppp
+   Далее правишь pptpd.conf (положишь его в /etc)
+   а также все что тебе нужно в /etc/ppp/ (options, chap-secret e.t.c.)
+     pppd я патчил лишь на предмет обращения к radius-y.
+
+   http://forum.linux.by/viewtopic.php?p=12386&sid=2d4f71df293548fbacbb04
+   db4d4acb63
+
+   http://mavhome.dp.ua/progs.htm

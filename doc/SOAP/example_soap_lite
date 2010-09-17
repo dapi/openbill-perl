@@ -1,0 +1,429 @@
+<BASE HREF="http://cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm?rev=1.4"><table border=1 width=100%><tr><td><table border=1 bgcolor=#ffffff cellpadding=10 cellspacing=0 width=100% color=#ffffff><tr><td><font face=arial,sans-serif color=black size=-1>This is <b><font color=#0039b6>G</font> <font color=#c41200>o</font> <font color=#f3c518>o</font> <font color=#0039b6>g</font> <font color=#30a72f>l</font> <font color=#c41200>e</font></b>'s <a href="http://www.google.com/help/features.html#cached"><font color=blue>cache</font></a> of <A HREF="http://cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm?rev=1.4"><font color=blue>http://cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm?rev=1.4</font></a> as retrieved on 2 Apr 2004 11:22:00 GMT.<br>
+<b><font color=#0039b6>G</font> <font color=#c41200>o</font> <font color=#f3c518>o</font> <font color=#0039b6>g</font> <font color=#30a72f>l</font> <font color=#c41200>e</font></b>'s cache is the snapshot that we took of the page as we crawled the web.<br>
+The page may have changed since that time.  Click here for the <A HREF="http://cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm?rev=1.4"><font color=blue>current page</font></a> without highlighting.<br>
+This cached page may reference images which are no longer available. Click here for the <A HREF="http://www.google.ru/search?q=cache:_GkvH878XkAJ:cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm%3Frev%3D1.4+SOAP::Lite+xsd:date&hl=en&lr=&ie=UTF-8&strip=1"><font color=blue>cached text</font></a> only.<br>To link to or bookmark this page, use the following url: <code>http://www.google.com/search?q=cache:_GkvH878XkAJ:cvs.sourceforge.net/viewcvs.py/sforce/perl-module/lib/Salesforce.pm%3Frev%3D1.4+SOAP::Lite+xsd:date&amp;hl=ru</code></font><br><br><center><font size=-2><i>Google is not affiliated with the authors of this page nor responsible for its content.</i></font></center></td></tr>
+<tr><td>
+<table border=0 cellpadding=0 cellspacing=0><tr><td><font face=arial,sans-serif color=black size=-1>These search terms have been highlighted:&nbsp;</font></td><td bgcolor=#ffff66><B><font face=arial,sans-serif color=black size=-1>soap&nbsp;</font></B></td><td bgcolor=#ffff66><B><font face=arial,sans-serif color=black size=-1>lite&nbsp;</font></B></td><td bgcolor=#A0FFFF><B><font face=arial,sans-serif color=black size=-1>xsd&nbsp;</font></B></td><td bgcolor=#A0FFFF><B><font face=arial,sans-serif color=black size=-1>date&nbsp;</font></B></td></tr></table>
+</td></tr></table></td></tr></table>
+<hr>
+<html>
+<head>
+</head><body><pre>#=================================================================
+#
+# Copyright (C) 2003 Byrne Reese (byrne at majordojo dot com)
+# The Salesforce module is free software; you can redistribute
+# it and/or modify it under the same terms as Perl itself.
+#
+#=================================================================
+
+package Salesforce;
+
+use Service;
+
+$VERSION=0.55;
+
+##################################################################
+# BEGIN PortType Definitions
+# Notes: 
+package Salesforce::Soap;
+
+use strict;
+
+BEGIN {
+  use vars qw($PARAMS);
+  $PARAMS-&gt;{&#39;login&#39;} = { &#39;username&#39; =&gt; &#39;SCALAR&#39;, &#39;password&#39; =&gt; &#39;SCALAR&#39;, };
+}
+
+sub new {
+    my($class)  = shift;
+    my(%params) = @_;
+    bless {
+	&quot;style&quot;     =&gt; &#39;document&#39;,
+	&quot;transport&quot; =&gt; &#39;<a href="http://schemas.xmlsoap.org/soap/http&#39;">http://schemas.xmlsoap.org/soap/http&#39;</a>,
+	&quot;address&quot;   =&gt; $params{&#39;address&#39;}
+    }, $class;
+}
+
+sub get_session_header {
+    my $self = shift;
+    return SOAP::Header-&gt;name(&#39;SessionHeader&#39; =&gt; \SOAP::Header-&gt;name(&#39;sessionId&#39; =&gt; $self-&gt;{&#39;sessionId&#39;}));
+}
+
+sub login {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $r = $client-&gt;login(SOAP::Data-&gt;name(&#39;username&#39; =&gt; $in{&#39;username&#39;}),
+			 SOAP::Data-&gt;name(&#39;password&#39; =&gt; $in{&#39;password&#39;}));
+    die $r-&gt;faultstring() if $r-&gt;fault();
+
+    $self-&gt;{&#39;sessionId&#39;} = $r-&gt;valueof(&#39;//loginResponse/result/sessionId&#39;);
+    $self-&gt;{&#39;serverUrl&#39;} = $self-&gt;{&#39;address&#39;} = 
+	$r-&gt;valueof(&#39;//loginResponse/result/serverUrl&#39;);
+    $self-&gt;{&#39;userId&#39;} = $r-&gt;valueof(&#39;//loginResponse/result/userId&#39;);
+    return 1;
+}
+
+sub query {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $r = $client-&gt;query($self-&gt;get_session_header(),
+			   SOAP::Data-&gt;name(&#39;query&#39; =&gt; $in{&#39;query&#39;}),
+			   SOAP::Header-&gt;name(&#39;QueryOptions&#39; =&gt; \SOAP::Header-&gt;name(&#39;batchSize&#39; =&gt; $in{&#39;limit&#39;})));
+    return $r;
+
+}
+
+sub queryMore {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $r = $client-&gt;queryMore($self-&gt;get_session_header(),
+			       SOAP::Data-&gt;name(&#39;queryLocator&#39; =&gt; $in{&#39;queryLocator&#39;}),
+			       SOAP::Header-&gt;name(&#39;QueryOptions&#39; =&gt; \SOAP::Header-&gt;name(&#39;batchSize&#39; =&gt; $in{&#39;limit&#39;})));
+    return $r;
+
+}
+
+sub update {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;readable(1)
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $method = SOAP::Data
+	-&gt;name(&quot;update&quot;)
+        -&gt;prefix(&quot;sforce&quot;)
+        -&gt;uri(&quot;urn:partner.soap.sforce.com&quot;)
+	-&gt;attr( { &#39;xmlns:sfons&#39; =&gt; &#39;urn:sobject.partner.soap.sforce.com&#39; } );
+
+    my $type = $in{&#39;type&#39;};
+    delete($in{&#39;type&#39;});
+
+    my $id = $in{&#39;id&#39;};
+    delete($in{&#39;id&#39;});
+
+    my @elems;
+    push @elems, SOAP::Data-&gt;prefix(&#39;sforce&#39;)-&gt;name(&#39;Id&#39; =&gt; $id)-&gt;type(&#39;sforce:ID&#39;);
+    
+    foreach my $key (keys %in) {
+	push @elems, SOAP::Data-&gt;prefix(&#39;sforce&#39;)-&gt;name($key =&gt; $in{$key})-&gt;type($Salesforce::Constants::TYPES{$type}-&gt;{$key});
+    }
+
+    my $r = $client-&gt;call($method =&gt; 
+		SOAP::Data-&gt;name(&#39;sObjects&#39; =&gt; \SOAP::Data-&gt;value(@elems))
+			  -&gt;attr( { &#39;xsi:type&#39; =&gt; &#39;sforce:&#39;.$type } ),
+			  $self-&gt;get_session_header());
+
+    return $r;
+}
+
+# Added 12/29/2003
+sub create {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;readable(1)
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $method = SOAP::Data
+	-&gt;name(&quot;create&quot;)
+        -&gt;prefix(&quot;sforce&quot;)
+	-&gt;uri(&quot;urn:partner.soap.sforce.com&quot;)
+	-&gt;attr( { &#39;xmlns:sfons&#39; =&gt; &#39;urn:sobject.partner.soap.sforce.com&#39; } );
+
+    my $type = $in{&#39;type&#39;};
+    delete($in{&#39;type&#39;});
+    
+    my @elems;
+    foreach my $key (keys %in) {
+	push @elems, SOAP::Data-&gt;prefix(&#39;sfons&#39;)-&gt;name($key =&gt; $in{$key})-&gt;type($Salesforce::Constants::TYPES{$type}-&gt;{$key});
+    }
+
+    my $r = $client-&gt;call($method =&gt; 
+		SOAP::Data-&gt;name(&#39;sObjects&#39; =&gt; \SOAP::Data-&gt;value(@elems))
+			  -&gt;attr( { &#39;xsi:type&#39; =&gt; &#39;sfons:&#39;.$type } ),
+			  $self-&gt;get_session_header());
+
+    return $r;
+}
+
+# Added 12/29/2003
+sub delete {
+    my $self = shift;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;readable(1)
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $method = SOAP::Data
+	-&gt;name(&quot;delete&quot;)
+        -&gt;prefix(&quot;sforce&quot;)
+        -&gt;uri(&quot;urn:partner.soap.sforce.com&quot;);
+
+    my @elems;
+    foreach my $id (@_) {
+	push @elems, SOAP::Data-&gt;name(&#39;ids&#39; =&gt; $id)-&gt;type(&#39;tns:ID&#39;);
+    }
+
+    my $r = $client-&gt;call($method =&gt; @elems, 
+			  $self-&gt;get_session_header());
+
+    return $r;
+}
+
+# added 1/3/2004
+sub getServerTimestamp {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;readable(1)
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $method = SOAP::Data
+	-&gt;name(&quot;getServerTimestamp&quot;)
+        -&gt;prefix(&quot;sforce&quot;)
+        -&gt;uri(&quot;urn:partner.soap.sforce.com&quot;)
+	-&gt;attr( { &#39;xmlns:sfons&#39; =&gt; &#39;urn:sobject.partner.soap.sforce.com&#39; } );
+
+    my $r = $client-&gt;call($method =&gt; undef, $self-&gt;get_session_header());
+
+    return $r;
+}
+
+# Added 12/29/2003
+sub getUserInfo {
+    my $self = shift;
+    my (%in) = @_;
+
+    my $client = <B style="color:black;background-color:#ffff66">SOAP::Lite</B>
+	-&gt;readable(1)
+	-&gt;deserializer(Salesforce::Deserializer-&gt;new)
+	-&gt;on_action( sub { return &#39;&quot;&quot;&#39; } )
+	-&gt;uri(&#39;urn:partner.soap.sforce.com&#39;)
+	-&gt;proxy($self-&gt;{address});
+
+    my $method = SOAP::Data
+	-&gt;name(&quot;getUserInfo&quot;)
+        -&gt;prefix(&quot;sforce&quot;)
+        -&gt;uri(&quot;urn:partner.soap.sforce.com&quot;);
+
+    my $r = $client-&gt;call($method =&gt; 
+			SOAP::Data-&gt;prefix(&#39;sforce&#39;)
+			          -&gt;name(&#39;getUserInfo&#39; =&gt; $in{&#39;user&#39;})
+                                  -&gt;type(&#39;xsd:string&#39;), 
+			  $self-&gt;get_session_header());
+
+    return $r;
+}
+
+# END PortType Definitions
+##################################################################
+
+#################################################################
+# BEGIN Service Definitions
+package Salesforce::SforceService;
+use strict;
+use vars qw(@ISA);
+@ISA = qw(Service);
+
+sub new {
+    my($class)  = shift;
+    my(%params) = @_;
+    my($self) = Service-&gt;new(@_);
+    $self-&gt;add_port( &#39;name&#39;        =&gt; &#39;Soap&#39;,
+		     &#39;bindingName&#39; =&gt; &#39;tns:SoapBinding&#39; ,
+		     &#39;binding&#39;     =&gt; Salesforce::Soap-&gt;new(&#39;address&#39; =&gt; &#39;<a href="https://www.sforce.com/services/Soap/c/2.5&#39;));">https://www.sforce.com/services/Soap/c/2.5&#39;));</a>
+    return(bless($self, $class));
+}
+
+# END Service Definitions
+##################################################################
+
+##################################################################
+# BEGIN Type Definitions
+# Notes: 
+package Salesforce::LoginResult;
+use strict;
+
+sub BEGIN {
+  no strict &#39;refs&#39;;
+  for my $method (qw(serverUrl sessionId userId)) {
+    my $field = &#39;_&#39; . $method;
+    *$method = sub {
+      my $self = shift;
+      @_ ? ($self-&gt;{$field} = shift, return $self) : return $self-&gt;{$field};
+    }
+  }
+}
+
+# END Type Definitions
+##################################################################
+
+##################################################################
+# BEGIN Deserializer
+package Salesforce::Deserializer;
+use <B style="color:black;background-color:#ffff66">SOAP::Lite</B>;
+
+use strict;
+use vars qw(@ISA);
+@ISA = qw(SOAP::Deserializer);
+use strict &#39;refs&#39;;
+
+sub new {
+    my $class  = shift;
+    my $self = $class-&gt;SUPER::new(@_);
+    my (%params) = @_;
+    return $self;
+}
+
+BEGIN {
+  use vars qw($XSD_NSPREFIX $XSI_NSPREFIX $SOAPENV_NSPREFIX 
+	      $SOAPENC_NSPREFIX $NSPREFIX);
+
+  $XSD_NSPREFIX=&quot;xsd&quot;;
+  $XSI_NSPREFIX=&quot;xsi&quot;;
+  $SOAPENV_NSPREFIX=&quot;SOAP-ENV&quot;;
+  $SOAPENC_NSPREFIX=&quot;SOAP-ENC&quot;;
+  $NSPREFIX=&quot;wsisup&quot;;
+  
+  no strict &#39;refs&#39;;
+  for my $class (qw(LoginResult)) {
+    my $method_name = &quot;as_&quot;.$class;
+    my $class_name = &quot;Salesforce::&quot;.$class;
+    my $method_body = &lt;&lt;END_OF_SUB;
+sub $method_name {
+#    print STDERR &quot;*****In $method_name*****\n&quot;;
+    my (\$self,\$f,\$name,\$attr) = splice(\@_,0,4);
+    my \$ns = pop;
+    my \$${class} = Salesforce::${class}-&gt;new;
+    foreach my \$elem (\@_) {
+	\$elem = shift \@\$elem if (ref(\$elem-&gt;[0]) eq &#39;ARRAY&#39;);
+	my (\$name2, \$attr2, \$value2, \$ns2) = splice(\@{\$elem},0,4);
+	my (\$pre2,\$type2) = (\${attr2}-&gt;{\$XSI_NSPREFIX.&quot;:type&quot;} =~ /([^:]*):(.*)/);
+        if (\$pre2 &amp;&amp; \$pre2 eq \$XSD_NSPREFIX) {
+	    \$${class}-&gt;{&#39;_&#39;.\$name2} = \$value2;
+	} else {
+	    my \$cmd = &#39;\$self-&gt;as_&#39;.\$type2.&#39;(\$f,\@\$value2);&#39;;
+	    \$${class}-&gt;{&#39;_&#39;.\$name2} = eval \$cmd;
+        }
+    }
+    return \$${class};
+}
+END_OF_SUB
+#    print STDERR $method_body;
+#    *$method_name = eval $method_body;
+    eval $method_body;
+  }
+}
+
+sub as_Array {
+    my $self = shift;
+    my $f = shift;
+    my @Array;
+    foreach my $elem (@_) {
+	my ($name, $attr, $value, $ns) = splice(@$elem,0,4);
+	my $attrv = ${attr}-&gt;{$XSI_NSPREFIX.&quot;:type&quot;};
+	my ($pre,$type) = ($attrv =~ /([^:]*):(.*)/);
+        my $result;
+        if ($pre eq $XSD_NSPREFIX) {
+	    $result = $value;
+	} else {
+	    my $cmd = &#39;$self-&gt;as_&#39;.$type.&#39;(1, $name, $attr, @$value, $ns );&#39;;
+#	    print STDERR $cmd . &quot;\n&quot;;
+	    $result = eval $cmd;
+	}
+        push (@Array, $result);
+    }
+    return \@Array;
+}
+
+# END Deserializer
+##################################################################
+
+package Salesforce::Constants;
+
+BEGIN {
+    use vars qw(%TYPES);
+    %TYPES = (
+	      &#39;Account&#39; =&gt; {
+			    &#39;AccountNumber&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Active__c&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;AnnualRevenue&#39; =&gt; &#39;xsd:double&#39;,
+			    &#39;BillingCity&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;BillingCountry&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;BillingPostalCode&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;BillingState&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;BillingStreet&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;CreatedById&#39; =&gt; &#39;tns:ID&#39;,
+			    &#39;CreatedDate&#39; =&gt; &#39;xsd:dateTime&#39;,
+			    &#39;CustomerPriority__c&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Description&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Fax&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Industry&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;LastModifiedById&#39; =&gt; &#39;tns:ID&#39;,
+			    &#39;LastModifiedDate&#39; =&gt; &#39;xsd:dateTime&#39;,
+			    &#39;Name&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;NumberOfEmployees&#39; =&gt; &#39;xsd:int&#39;,
+			    &#39;NumberofLocations__c&#39; =&gt; &#39;xsd:double&#39;,
+			    &#39;OwnerId&#39; =&gt; &#39;tns:ID&#39;,
+			    &#39;Ownership&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ParentId&#39; =&gt; &#39;tns:ID&#39;,
+			    &#39;Phone&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Rating&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;SLAExpirationDate__c&#39; =&gt; &#39;<B style="color:black;background-color:#A0FFFF">xsd:date</B>&#39;,
+			    &#39;SLASerialNumber_c&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;SLA__c&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ShippingCity&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ShippingCountry&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ShippingPostalCode&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ShippingState&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;ShippingStreet&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Sic&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Site&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;SystemModstamp&#39; =&gt; &#39;xsd:sateTime&#39;,
+			    &#39;TickerSymbol&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Type&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;UpsellOpportunity__c&#39; =&gt; &#39;xsd:string&#39;,
+			    &#39;Website&#39; =&gt; &#39;xsd:string&#39;,
+			   },
+	     );
+}
+
+1; # Never forget the return value for the perl module :)
+</pre></body></html>

@@ -1,0 +1,108 @@
+#!/bin/sh
+#
+# tpol firewall script.
+#
+# reads /etc/firewall*
+
+# TODO Проверять при изменении данных пользователя, чтобы файрволл был запущен
+
+. /usr/local/openbill/router/etc/ulog-conf.sh
+
+function stop {
+    # default policies
+    $fw -P INPUT   ACCEPT
+    $fw -P OUTPUT  ACCEPT
+    $fw -P FORWARD ACCEPT
+
+}
+
+
+function reset {
+    # flush
+    $fw -F
+    $fw -F INPUT
+    $fw -F OUTPUT
+    $fw -F FORWARD
+    $fw -F -t nat
+
+    $fw -X
+    $fw -t nat -X
+
+    # zero counters
+    $fw -Z
+    $fw -Z INPUT
+    $fw -Z OUTPUT
+    $fw -Z FORWARD
+    $fw -Z -t nat
+}
+
+
+function start {
+    # initialize chains
+    . $FW_CONF
+    if [ "$REAL_INT" -a "$LOCAL_INT" ]; then
+      . $FW_ROOT/firewall.rules
+    else
+      echo "Some interfaces are not configured.."
+    fi
+}
+
+function users {
+    # initialize chains
+    . $FW_CONF
+    . $FW_ROOT/users
+}
+
+
+case $1 in
+    "start")
+	    echo "Starting firewall"
+	    fw="/usr/local/sbin/iptables"
+	    echo="echo"
+	    reset
+	    start
+	    ;;
+    "print")
+	    fw="echo iptables"
+	    echo="print"
+	    reset
+	    start
+	    ;;
+    "stop")
+	    echo "Stopping firewall"
+	    fw="/usr/local/sbin/iptables"
+	    reset
+	    stop
+	    ;;
+    "restart")
+	    echo "Restarting firewall"
+	    fw="/usr/local/sbin/iptables"
+	    echo="echo"
+	    reset
+	    stop
+	    start
+	    ;;
+    "users")
+	    echo "Updating users"
+	    fw="/usr/local/sbin/iptables"
+	    echo="echo"
+            users
+	    ;;
+    "users_status")
+#	    echo "------[ table filter ]------"
+	    /usr/local/sbin/iptables -L USER_FORWARD -n -v --line-numbers
+#	    echo "------[ table mangle ]------"
+#	    /usr/local/sbin/iptables -L -n -v -t mangle --line-numbers
+	    ;;
+    "status")
+	    echo "------[ table filter ]------"
+	    /usr/local/sbin/iptables -L -n -v --line-numbers
+	    echo "------[ table mangle ]------"
+	    /usr/local/sbin/iptables -L -n -v -t mangle --line-numbers
+	    ;;
+    *)
+	    echo "usage: $0 {start|stop|restart|status|users|users_status|print}"
+	    ;;
+esac
+
+exit 0

@@ -1,0 +1,12 @@
+# Setup FORWARD chain
+
+#TODO Закрыть 135 - через него вирусы вылезают наружу лезут
+# Зачем? Ведь они блокируются в input
+#$fw -A FORWARD -p tcp --sport 135 -j $DENY
+#$fw -A FORWARD -p tcp --dport 135 -j $DENY
+
+$fw -N USER_FORWARD
+
+$fw -A FORWARD -j USER_FORWARD
+$fw -A FORWARD $log "FORWARD_DENY"
+$fw -A FORWARD -j $DENY

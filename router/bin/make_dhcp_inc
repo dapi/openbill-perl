@@ -1,0 +1,23 @@
+#!/bin/sh
+# Make dhcpd.inc.conf
+
+. /usr/local/openbill/router/etc/ulog-conf.sh
+
+NET=`cat /etc/orionet/net_local`
+
+MASK=`ipcalc -b $NET | grep mask | awk '{print $2}'`
+BCAST=`ipcalc -b $NET | grep Broadcast | awk '{print $2}'`
+SUBNET=`ipcalc -b $NET | grep Network | awk '{print $2}' | sed -e 's/\/.*//'`
+IP=`ipcalc -b $NET | grep Address | awk '{print $2}'`
+
+DIP=`ipcalc -b $NET | grep HostMax | awk '{print $2}'`
+
+echo "DHCP: $IP -> $SUBNET/$MASK ($BCAST)"
+
+echo "option domain-name-servers $IP;
+subnet $SUBNET netmask $MASK {
+        option routers $IP;
+        range $DIP $DIP;
+        option subnet-mask $MASK;
+        option broadcast-address $BCAST;
+}" > $DHCPD_INC_FILE

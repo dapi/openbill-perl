@@ -1,0 +1,8 @@
+[% INCLUDE header.txt %]
+Subject: Ваш баланс [% client.balance | money %]
+
+Уважаемый(ая) $client.name!
+
+[% INCLUDE show_balance.txt %]
+
+[% INCLUDE footer.txt %]

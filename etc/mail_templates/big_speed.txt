@@ -1,0 +1,22 @@
+[% INCLUDE header.txt %]
+Subject: Возможно отключение [% PROCESS days %]
+
+Уважаемый $client.name!
+
+
+Судя по скорости расходования средств со счёта в ORIONET их может не
+хватить более чем на [% PROCESS days %].
+
+Сейчас на Вашем счету [% client.balance | money %].
+
+Просим Вас заранее пополнить счёт, так как при достижении нулевого
+баланса доступ в интернет будет отключён.
+
+[% INCLUDE footer.txt %]
+[% BLOCK days %]
+[% IF days %]
+через $days [% IF days==1 %]день[% ELSIF days>=2 && days<=4 %]дня[% ELSE %]дней[% END %]
+[% ELSE %]
+в ближайшее время
+[% END %]
+[% END %]

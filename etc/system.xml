@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="koi8-r"?>
+<xml>
+  <subsystem name="openbill">
+
+    <directories>
+      <root>/usr/local/openbill/</root>
+      <etc>etc/</etc>
+      <log>log/</log>
+      <temp>tmp/</temp>
+      <mail_template>etc/mail_templates/</mail_template>
+      <var>var/</var>
+      <ssl_keys>var/keys/</ssl_keys>
+      <lock>var/lock/</lock>
+
+      <script>var/script/</script>
+
+    </directories>
+
+    <modules>
+      <!-- Службы -->
+<!--      <service>openbill::Service::IPTraff</service>-->
+
+      <!-- Коллекторы -->
+      <collector>openbill::Collector::Ipacct</collector>
+      <collector>openbill::Collector::Ulog</collector>
+      <collector>openbill::Collector::Trafd</collector>
+      <collector>openbill::Collector::Ipcad</collector>
+
+      <!-- Привратники -->
+      <janitor>openbill::Janitor::IPTables</janitor>
+      <janitor>openbill::Janitor::IPFW</janitor>
+      <janitor>openbill::Janitor::IPFW_Table</janitor>
+      <janitor>openbill::Janitor::IPFilter</janitor>
+      <janitor>openbill::Janitor::Radius</janitor>
+
+    </modules>
+
+    <logger module="dpl::Log::Log4perl">
+      <config>logger.conf</config>
+    </logger>
+    <timezone>Europe/Moscow</timezone>
+
+    <include>local.xml</include>
+    <include>database.xml</include>
+
+    <mailer>
+      <sender>Qmail</sender>
+    </mailer>
+
+    <templates>
+      <mail name="balance" desc="Баланс слишком маленький">
+        <file>balance.txt</file>
+      </mail>
+      <mail name="ny" desc="Новогоднее поздравление">
+        <file>ny.txt</file>
+      </mail>
+      <mail name="1may" desc="Поздравление с 1 мая">
+        <file>1may.txt</file>
+      </mail>
+      <mail name="1jun" desc="Поздравление с 1 мая">
+        <file>1jun.txt</file>
+      </mail>
+      <mail name="balance_alert" desc="Баланс слишком маленький">
+        <file>balance_alert.txt</file>
+      </mail>
+      <mail name="deactivate_client" desc="Отключен">
+        <file>deactivate.txt</file>
+      </mail>
+      <mail name="create_client" desc="Создан">
+        <file>create_client.txt</file>
+        </mail>
+      <mail name="create_client_sms" desc="Создан">
+        <file>create_client.sms</file>
+        </mail>
+      <mail name="activate_client" desc="Включён">
+        <file>activate.txt</file>
+      </mail>
+      <mail name="registration" desc="Регистрация">
+        <file>registration.txt</file>
+      </mail>
+      <mail name="close_period" desc="Информация о прошедшем периоде">
+        <file>close_period.txt</file>
+      </mail>
+      <mail name="change_tariff" desc="Смена тарифа">
+        <file>change_tariff.txt</file>
+      </mail>
+      <mail name="big_speed" desc="Большая скорость растраты, скоро отключится">
+        <file>big_speed.txt</file>
+      </mail>
+      <mail name="make_payment" desc="Оплата">
+        <file>make_payment.txt</file>
+      </mail>
+      <mail name="little_money" desc="Мало средств на счёте">
+        <file>little_money.txt</file>
+      </mail>
+      <mail name="create_host" desc="Создан host">
+        <file>create_host.txt</file>
+      </mail>
+      <mail name="attach_host" desc="host присоединён к клиенту">
+        <file>attach_host.txt</file>
+      </mail>
+      <mail name="create_router" desc="Создан роутер">
+        <file>create_router.txt</file>
+      </mail>
+      <mail name="modify_router" desc="Модифицирован роутер">
+        <file>modify_router.txt</file>
+      </mail>
+	  <mail name="modify_host" desc="Модифицирован хост">
+        <file>modify_host.txt</file>
+      </mail>
+     </templates>
+
+  </subsystem>
+</xml>

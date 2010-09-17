@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+ip=$1
+bridge=$2
+
+if [ -z "$bridge" ]; then
+ bridge="vpn.orionet.ru"
+fi
+
+#213.59.74.242
+
+/usr/local/bin/ssh -oProtocol=2 -C -i /usr/local/openbill/var/keys/nagios/$bridge root@$bridge "/usr/local/openbill/janitors/check_host.sh -n 3 $ip" > /tmp/ch_$ip 2> /tmp/ch2_$ip
+
+res=`cat /tmp/ch2_$ip | gawk -F ';' '{ print $2 }'`
+RTA=`cat /tmp/ch2_$ip | gawk -F ';' '{ print $4 }'`
+loss=`cat /tmp/ch2_$ip | gawk -F ';' '{ print $5 }'`
+answer=`cat /tmp/ch2_$ip`
+
+#ARPING: 10.100.6.186;NO;1
+#ARPING: 10.100.6.6;OK;00:15:f2:4d:b7:38;9.978 msec;0;3
+
+if [ "$res" == "OK" ]; then
+  echo "ARPING OK - Packet loss = $loss%, RTA = $RTA"
+else
+  echo "CRITICAL - $answer"
+  exit 2
+fi
+
+#exit 1 - warning
+
+# echo "CRITICAL - Plugin timed out after 10 seconds"

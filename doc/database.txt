@@ -1,0 +1,248 @@
+По каждой записи для лубой таблицы может существовать дополнительная
+информация в файле ext_data/$table/$id.xml
+
+manager:
+ id
+ name
+ comment
+ is_admin
+
+street:
+ id
+ name
+ comment
+
+building:
+ id
+ street_id
+ number
+ comment
+
+address:
+ id
+ street_id
+ building_id
+ room
+ comment
+
+client:
+ id
+ address_id
+ name
+ telefon
+ email
+ reg_date
+ firmname
+ is_firm
+ nick
+ comment
+ * дополнительные параметры в xml
+ bank varchar(150),
+ bank_bik varchar(20), bank_inn varchar(20), bank_okpo varchar(20), bank_okonh varchar(20),
+ bank_rschet varchar(50), bank_korschet varchar(50)
+
+account:
+ client_id
+ balance
+ date_update
+
+# любое списание или зачисление пишется сразу в баланс, чтобы не
+# листать соответсвующие таблицы, после записи в соответствующих
+# таблицах устанавливается date_closed
+
+# счета выставляются в конце месяца в них объединяются все списания
+# сделанные за этот месяц. Счёт выставляется после выполнения цикла
+# списаний.
+
+invoice:
+ id
+ client_id
+ date
+ num
+ comment
+ month
+
+payment:
+ id
+ client_id
+ sum
+ form
+ invoice_id - за какой счёт nullable
+ date
+ manager_id
+ comment
+ time_closed - время, когда эта запись учтена в балансе account->balance
+
+charger: - возможно лучше сделать в xml
+ id
+ name
+ comment
+ module
+ parameters (database name)
+
+withdrawal:
+ id
+ invoice_id nullable
+ client_id
+// sum = quantity*price
+ quantity
+ price
+ form
+ date
+ comment
+ charger_id
+ month
+ date_closed
+
+
+
+------------------------
+База для trafic charger
+
+access_mode_id
+ id
+ name
+* xml
+ rule
+ rule
+ rule
+
+janitor
+ id
+ name
+ description
+ deny_am_id
+
+collector:
+ id
+ ip
+ ip2
+ name
+ comment
+ type
+ address_id
+
+tarif:
+ id
+ name
+ type
+ season_price
+ season_mb
+ mb_price
+ is_secret
+
+router:
+ id
+ host_id unique
+ router_name
+ router_desc
+ janitor_id # janitor для всех хостов этого моста по умолчанию
+ collector_id not null # collector для всех хостов этого моста по умолчанию
+ address_id
+
+host:
+ id
+ ip
+ mac
+ hostname
+ address_id
+ router_id
+ collector_id nullable
+ janitor_id
+ comment
+ create_time
+ lastwork_time
+
+janitor_log: когда исполнялись изменения режима. Сюда заносятся все изменения по авторизации и по *_activation.
+ janitor_id
+ host_id
+ am_id
+ time
+
+host_attach
+ client_id
+ host_id
+ attach_month
+ deattach_month
+
+host_activation
+ host_id
+ am_id - под каким access_mode клиент включается
+ on_date
+ off_date
+ done_time - ? есть janitor_log
+
+account_activation
+ client_id
+ am_id - под каким access_mode клиент включается
+ on_date
+ off_date
+ done_time - ? есть janitor_log
+
+tarif_log
+ client_id
+ tarif_id
+ month
+
+---------------------------------------------
+
+provider_traffic
+ ip,
+ date
+ i_in, i_out
+ o_in, o_out
+
+month_traffic
+ host_id
+ month
+ i_in, i_out
+ o_in, o_out
+ l_in, l_out
+ is_closed
+unique(client_id,date)
+
+day_traffic
+ host_id
+ date
+ i_in, i_out
+ o_in, o_out
+ l_in, l_out
+ is_closed
+unique(client_id,date)
+
+# не записывать если день или месяц закрыт
+
+minut_traffic
+ host_id
+ date
+ time
+ i_in, i_out
+ o_in, o_out
+ l_in, l_out
+
+# не записывать в таблицу, если день или месяц закрыт
+
+
+# таблица в которую записываются даты съемных файлов для контроля
+# повторной записи
+
+shots_log
+ host_id
+ logfile_time
+ parsetime default 'now'
+ unique(client_id,logfile_time)
+
+ip_log
+ ip
+ date,
+ time
+ i_in, i_out
+ o_in, o_out
+ l_in, l_out
+
+# Напоминает minut_traffic, только для ip
+
+# по сути таблица minut_traffic и ip_log читатся только при просмотре
+# графика потребления интернет за день
+
+# Для расчёта баланса используется только таблица month_traffic

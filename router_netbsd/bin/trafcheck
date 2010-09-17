@@ -1,0 +1,55 @@
+#!/bin/sh
+
+HOST=`/bin/hostname`
+
+check() {
+cd /etc/orionet/stats_ifaces;
+for fl in *; do
+
+ pidf=/var/run/trafd.$fl;
+ res=0;
+   if [ -f "$pidf" ]; then
+     pid="`cat $pidf`"
+     [ -n "$pid" ] && kill -0 $pid
+     if [ -z "$pid" -o "$?" != 0 ]; then
+        rm -f "$pidf"
+	to_log "($fl) trafd is not run on this interface"
+	if [ $1 != "0" ];then
+	start $fl;
+	fi
+	res=1
+     fi
+   else
+	to_log "($fl) trafd is not run on this interface"
+	if [ "$1" != "0" ];then
+	start $fl;
+	fi
+	res=1
+   fi
+
+return $res
+done
+}
+
+to_log() {
+    date=`/bin/date '+%h %d %H:%M:%S'`;
+    echo "$date testbridge trafcheck: $1" >> /var/log/trafd.log
+}
+
+start() {
+    /usr/local/bin/trafstart $1;
+}
+
+mail() {
+    echo -e "Subject: $1\nTo: diman@orionet.ru\n$1" | /usr/sbin/sendmail -t -n -f root@$HOST
+}
+
+case "$1" in
+  start)
+  check "start";
+  ;;
+  
+  *)
+  check;
+  ;;
+esac

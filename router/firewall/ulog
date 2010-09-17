@@ -1,0 +1,11 @@
+$fw -N ulog_forward
+$fw -A ulog_forward $ulog "FORWARD"
+$fw -A ulog_forward -j ACCEPT
+
+$fw -N ulog_input
+$fw -A ulog_input $ulog "INPUT"
+$fw -A ulog_input -j ACCEPT
+
+$fw -N ulog_output
+$fw -A ulog_output $ulog "OUTPUT"
+$fw -A ulog_output -j ACCEPT

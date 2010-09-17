@@ -1,0 +1,12 @@
+echo -n "Block nets: "
+
+
+#
+# blocked nets
+for net in $BLOCKED_NETS; do
+    $fw -A INPUT -s $net $log "DROP=$net "
+    $fw -A INPUT -s $net -j $DENY
+    echo -n "."
+done
+
+echo ""

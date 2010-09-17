@@ -1,0 +1,9 @@
+
+
+Опции для mysql на бридже (используется для ulogd)
+
+Версия 4.0.12:
+
+# --with-libwrap=/usr/ocal/
+
+./configure --without-debug --disable-nls --without-innodb --without-isam --without-bench --without-doc --enable-assembler --with-openssl --with-vio --prefix=/usr/local/mysql --enable-thread-safe-client  --without-readline

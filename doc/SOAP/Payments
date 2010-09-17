@@ -1,0 +1,3 @@
+* List
+РЕЗУЛЬТАТ массив
+ПРИМЕР my $payments = Payment::List({client_id=>123 # номер клиента});
